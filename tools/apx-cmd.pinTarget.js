@@ -1,7 +1,4 @@
-/** tools/apx-cmd.pinTarget.js
- * Port20へ target固定コマンドを送信（microが即時切替）
- * 使い方: run tools/apx-cmd.pinTarget.js <host>
- * @param {NS} ns */
+/** tools/apx-cmd.pinTarget.js */
 export async function main(ns){
   const host = String(ns.args[0] ?? "");
   if (!host || !ns.serverExists(host)) return ns.tprint("usage: run tools/apx-cmd.pinTarget.js <host>");

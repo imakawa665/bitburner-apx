@@ -1,7 +1,4 @@
-/** apx-backdoor.guide.v1.js
- * バックドア候補を抽出し、最短connectコマンドを提示（Singularity不要）
- * @param {NS} ns
- */
+/** apx-backdoor.guide.v1.js */
 export async function main(ns) {
   ns.disableLog('sleep'); const F=ns.flags([['watch',0]]); const SPECIAL=['CSEC','avmnite-02h','I.I.I.I','run4theh111z','w0r1d_d43m0n'];
   const find=(t)=>{ const q=['home'],p={home:null},seen=new Set(['home']); while(q.length){ const c=q.shift(); for(const n of ns.scan(c)){ if(seen.has(n))continue; seen.add(n); p[n]=c; q.push(n); if(n===t){ q.length=0; break; } } } if(!p.hasOwnProperty(t)) return null; const path=[]; let x=t; while(x){ path.push(x); x=p[x]; } path.reverse(); return path; };

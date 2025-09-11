@@ -1,7 +1,4 @@
-/** tools/apx-cmd.mode.js
- * Port20へ mode切替（auto/hack/grow/weaken）を送信
- * 使い方: run tools/apx-cmd.mode.js [auto|hack|grow|weaken]
- * @param {NS} ns */
+/** tools/apx-cmd.mode.js */
 export async function main(ns){
   const mode = String(ns.args[0] ?? "auto");
   const ok = ["auto","hack","grow","weaken"];

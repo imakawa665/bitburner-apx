@@ -1,0 +1,2 @@
+/** apx-loop-hgw.nano.js */
+export async function main(ns){const F=ns.flags([['target','n00dles'],['secPad',0.5],['moneyThr',0.95],['sleep',500]]);const t=String(F.target);while(true){const min=ns.getServerMinSecurityLevel(t),sec=ns.getServerSecurityLevel(t),max=ns.getServerMaxMoney(t),cur=ns.getServerMoneyAvailable(t);if(sec>min+F.secPad)await ns.weaken(t);else if(max>0&&cur<max*F.moneyThr)await ns.grow(t);else await ns.hack(t);await ns.sleep(F.sleep)}}

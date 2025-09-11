@@ -1,51 +1,32 @@
-[![License](https://img.shields.io/github/license/imakawa665/bitburner-apx)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/imakawa665/bitburner-apx)](https://github.com/imakawa665/bitburner-apx/releases)
+# bitburner-apx (Lily build)
 
-# bitburner-apx 
+Bitburner 用の軽量・高効率スクリプト集。HUD は Overview の `overview-extra-hook-0/1` を使う方式（一般的な手法）です。 
+これはあなたの `stats.js` と同じフック構造なので共存しやすいです。
 
-軽量・高効率の Bitburner スクリプト集(AI生成）です（Singularity不要の構成も多数）。
-**すぐに使える**ことと、**RAM極小**を最優先に設計しています。
+## 主要フォルダ
+- core/ … マネージャ（v2.09 は高RAM向け）
+- rooter/ … ルーター（単発/常駐）
+- workers/ … 単発 H/G/W と HGW ループ
+- tools/ … バックドア・pserv・Hacknet・バッチャ・インストーラ・起動テンプレ・HUD
+- singularity/ … SF-4 前提の自動化
 
-## ディレクトリ
-
-- `core/`
-  - `apx-core.nano.v2.06.js` — 低RAMオートパイロット（Singularity非依存）
-  - `apx-core.micro.v2.07.js` — 8GB向けチューニング版
-  - `apx-core.micro.v2.08.js` — root済みサーバを自動ターゲットに含める（`--allRooted true`）
-- `singularity/`
-  - `apx-autopilot.v2.05.js` — Singularity自動化（犯罪/ジム/大学）
-  - `apx-sing-actions.js` — Singularity安全ラッパ
-  - `apx-remote-send.js` — Port 20 にコマンド送信するテスター
-- `rooter/`
-  - `apx-root0.js` — 0ポート鯖一括NUKE
-  - `apx-rooter.nano.v1.js` — 超軽量一括ルーター（0〜5ポート対応）
-  - `apx-rooter.auto.v1.js` — 常駐ルーター（Hack/プログラム取得を検知）
-- `workers/`
-  - `apx-w1.js` / `apx-g1.js` / `apx-h1.js` — 単発ワーカー
-  - `apx-loop-hgw.nano.js` — 買収サーバ向けHGWループ
-- `tools/`
-  - `apx-backdoor.guide.v1.js` — バックドア最短`connect`ガイド（Singularity不要）
-  - `apx-pserv.nano.v1.js` — 買収サーバ自動デプロイ（nano）
-  - `apx-hud.lily.v1.js` — Overview用の軽量HUD
-
-## クイックスタート
-
-```bash
-# 1) ルート拡大
-run rooter/apx-rooter.nano.v1.js --log
-
-# 2) HUD
+## すぐ起動
+```
+run rooter/apx-rooter.auto.v1.js --interval 10000 --log
 run tools/apx-hud.lily.v1.js
-
-# 3) 収益マネージャ（root済み全体から選定したい時）
-run core/apx-core.micro.v2.08.js --allRooted true
-
-# 4) 買収サーバを段階的に増強
-run tools/apx-pserv.nano.v1.js --budget 0.6
+run core/apx-core.micro.v2.09.js --allRooted true
+run tools/apx-pserv.auto.v1.js --budget 0.5 --minRam 64 --maxRam 8192
+run tools/apx-hacknet.nano.v1.js --budget 0.2 --maxROI 3600
+```
+一括:
+```
+run tools/apx-startup.lily.js
 ```
 
-Singularity版の自動化（`singularity/`）は SF-4 を入手してから有効にしてください。
+## wget インストール
+```
+run tools/apx-install.js --user <you> --repo bitburner-apx --start
+```
+Private リポは wget 不可のため、配布用に Public repo / Secret Gist を使ってください。
 
-## ライセンス
-
-MIT License © 2025 Lily (Author)
+MIT License © 2025 Lily

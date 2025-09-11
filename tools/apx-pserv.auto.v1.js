@@ -1,7 +1,5 @@
 /** apx-pserv.auto.v1.js
  * 買収サーバの常駐メンテ（自動購入・置換・HGW起動確認）
- * 例:
- *   run apx-pserv.auto.v1.js --budget 0.5 --minRam 64 --maxRam 8192 --target joesguns --interval 15000
  * @param {NS} ns
  */
 export async function main(ns) {

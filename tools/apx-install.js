@@ -1,14 +1,5 @@
 /** apx-install.js
- * GitHub / Raw ベースから APX 一式を wget 自動インストール
- * 使い方:
- *   run apx-install.js --user <GitHubユーザー> --repo <リポ名> [--branch main] [--raw <RAW_BASE_URL>] [--start]
- * 例:
- *   run apx-install.js --user yourname --repo bitburner-apx --start
- *   run apx-install.js --raw https://gist.githubusercontent.com/xxx/yyy/raw/ --start
- * 備考:
- *  - Private repo は wget 不可（認証ヘッダを付けられないため）
- *  - --raw を使うと直指定のベースURLから取得可能（末尾にサブパスを連結）
- *  - --start 指定時は HUD / rooter / micro を起動
+ * Public Raw から APX 一式を wget で自動インストール
  * @param {NS} ns
  */
 export async function main(ns) {
@@ -32,6 +23,8 @@ export async function main(ns) {
     "tools/apx-hacknet.nano.v1.js",
     "tools/apx-hgw-batcher.v1.js",
     "tools/apx-hud.lily.v1.js",
+    "tools/apx-install.js",
+    "tools/apx-startup.lily.js",
     "singularity/apx-autopilot.v2.05.js",
     "singularity/apx-sing-actions.js",
     "singularity/apx-remote-send.js",
@@ -44,7 +37,7 @@ export async function main(ns) {
   let ok=0, ng=0;
   for (const rel of FILES) {
     const url = base + rel;
-    const dest = rel; // サブフォルダ名付きで保存
+    const dest = rel;
     try {
       const r = await ns.wget(url, dest, "home");
       if (r) { ok++; ns.print("OK  ", dest); }
@@ -55,7 +48,6 @@ export async function main(ns) {
     }
   }
   ns.tprint(`[apx-install] done: OK=${ok}, NG=${ng}`);
-
   if (f.start) {
     if (!ns.isRunning("tools/apx-hud.lily.v1.js", "home")) ns.run("tools/apx-hud.lily.v1.js");
     if (!ns.isRunning("rooter/apx-rooter.auto.v1.js", "home")) ns.run("rooter/apx-rooter.auto.v1.js", 1, "--interval", 10000, "--log");

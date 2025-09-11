@@ -1,5 +1,3 @@
-# Bitburner & misc
-*.txt
-*.log
 *.zip
+*.log
 .DS_Store

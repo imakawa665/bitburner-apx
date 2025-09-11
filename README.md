@@ -1,9 +1,9 @@
 [![License](https://img.shields.io/github/license/imakawa665/bitburner-apx)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/imakawa665/bitburner-apx)](https://github.com/imakawa665/bitburner-apx/releases)
 
-# bitburner-apx (Lily build)
+# bitburner-apx 
 
-軽量・高効率の Bitburner スクリプト集です（Singularity不要の構成も多数）。
+軽量・高効率の Bitburner スクリプト集(AI生成）です（Singularity不要の構成も多数）。
 **すぐに使える**ことと、**RAM極小**を最優先に設計しています。
 
 ## ディレクトリ

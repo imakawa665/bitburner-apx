@@ -23,6 +23,7 @@ export async function main(ns) {
   "tools/apx-hacknet.nano.v1.js",
   "tools/apx-hgw-batcher.v1.js",
   "tools/apx-hud.lily.v1.js",
+  "tools/apx-oneclick.lily.js",
   "tools/apx-share.nano.v1.js",
   "tools/apx-cmd.pinTarget.js",
   "tools/apx-cmd.mode.js",

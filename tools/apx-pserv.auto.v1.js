@@ -1,8 +1,4 @@
-/** apx-pserv.auto.v1.js
- * 買収サーバの常駐メンテ（自動購入・置換・HGW起動確認）
- * LOG: フェーズごとに ns.print / ns.tprint を追加（ロジック変更なし）
- * @param {NS} ns
- */
+/** apx-pserv.auto.v1.js */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('getPurchasedServerCost');
   const F = ns.flags([['budget',0.5],['minRam',64],['maxRam',8192],['target',''],['prefix','px'],['keep',false],['interval',15000],['log',true]]);
@@ -25,7 +21,7 @@ export async function main(ns) {
     const limit=ns.getPurchasedServerLimit(), have=ns.getPurchasedServers(), money=ns.getServerMoneyAvailable('home'), budget=money*Math.max(0,Math.min(1,F.budget));
     const target = pickTarget(); let bestRam = Math.max(F.minRam,2);
     for(let r=F.minRam; r<=F.maxRam; r*=2){ const c=ns.getPurchasedServerCost(r); if(c<=budget) bestRam=r; }
-    const need=Math.max(0, limit - have.length); let replaced=false; if(need===0 && !F.keep){ const infos=have.map(h=>({h, r:ns.getServerMaxRam(h)})).sort((a,b)=>a.r-b.r); for(const info of infos){ if(info.r>=bestRam) continue; if(ns.ps(info.h).length>0){ ns.killall(info.h); await ns.sleep(10);} if(ns.deleteServer(info.h)){ replaced=true; log('deleted',info.h,'for upgrade to',bestRam); break; } } }
+    const need=Math.max(0, limit - have.length); let replaced=false; if(need===0 && !F.keep){ const infos=have.map(h=>({h, r:ns.getServerMaxRam(h)})).sort((a,b)=>a.r-b.r); for(const info of infos){ if(info.r>=bestRam) continue; if(ns.ps(info.h).length>0){ ns.killall(info.h); await ns.sleep(10);} if(ns.deleteServer(info.h)){ replaced=true; log('deleted',info.h,'->',bestRam); break; } } }
     const canBuy = (need>0) || replaced; if (canBuy && bestRam>=F.minRam) { const name=`${F.prefix}-${Date.now().toString().slice(-6)}`; const cost=ns.getPurchasedServerCost(bestRam);
       if(cost<=ns.getServerMoneyAvailable('home')){ const host=ns.purchaseServer(name,bestRam); if(host){ ns.tprint(`[pserv.auto] 購入 ${host} (${bestRam}GB)`); log('purchased',host,bestRam); await ensureLoop(host, target); } } else log('waiting money',cost); }
     for (const h of ns.getPurchasedServers()) await ensureLoop(h, target);

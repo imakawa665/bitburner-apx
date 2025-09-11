@@ -1,8 +1,4 @@
-/** apx-hacknet.nano.v1.js
- * Hacknet の超軽量オート強化（ROI簡易）
- * LOG: 選定とROIを ns.print で出力（ロジック変更なし）
- * @param {NS} ns
- */
+/** apx-hacknet.nano.v1.js */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable');
   const F=ns.flags([['budget',0.2],['maxROI',3600],['interval',5000],['log',true]]);
@@ -12,7 +8,7 @@ export async function main(ns) {
   log('start budget',F.budget,'maxROI',F.maxROI);
   while(true){
     const n=ns.hacknet.numNodes(), money=ns.getServerMoneyAvailable('home'), budget=money*Math.max(0,Math.min(1,F.budget));
-    let best = null; // {type, idx, c, roi}
+    let best = null;
     try { const first = n>0 ? ns.hacknet.getNodeStats(0) : null; const c=cost.node(); if(!isNaN(c) && c<=budget && first){ const roi=c/(first.production||1); best={type:'node',idx:n,c,roi}; } } catch {}
     for(let i=0;i<n;i++){ for(const type of ['level','ram','core']){ const c = cost[type](i); if(c>budget) continue; const d = dGain(i,type); if(d<=0) continue; const roi = c / d; if(!best || roi < best.roi){ best = {type, idx:i, c, roi}; } } }
     if (best && best.roi <= F.maxROI) {

@@ -1,14 +1,10 @@
-/** apx-loop-hgw.nano.js
- * 超軽量HGWループ（購入サーバ/リモート向け）
- * LOG: 主要分岐で ns.print を追加（動作解析用）
- * @param {NS} ns
- */
+/** apx-loop-hgw.nano.js */
 export async function main(ns) {
   ns.disableLog('sleep');
   const F=ns.flags([['target','n00dles'],['secPad',0.5],['moneyThr',0.95],['sleep',500],['log',false]]);
   const log=(...a)=>{ if(F.log) ns.print('[loop]',...a); };
   const t=String(F.target);
-  log('start target=',t,'secPad=',F.secPad,'thr=',F.moneyThr);
+  log('start',t,F.secPad,F.moneyThr);
   while(true){
     const min=ns.getServerMinSecurityLevel(t), sec=ns.getServerSecurityLevel(t), max=ns.getServerMaxMoney(t), cur=ns.getServerMoneyAvailable(t);
     if(sec>min+F.secPad){ log('weaken',sec,'>',min+F.secPad); await ns.weaken(t); }

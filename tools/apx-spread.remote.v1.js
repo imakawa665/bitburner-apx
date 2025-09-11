@@ -1,9 +1,4 @@
-/** apx-spread.remote.v1.js
- * root済みの一般サーバへ workers/* を配布し、各ホストで HGW ループを起動
- * - home / darkweb / 購入サーバ / hacknet系は除外
- * LOG: 進行ログを ns.print / ns.tprint で出力
- * @param {NS} ns
- */
+/** apx-spread.remote.v1.js */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('scp'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
   const F=ns.flags([['target',''],['secPad',0.5],['moneyThr',0.95],['sleep',800],['log',true]]);

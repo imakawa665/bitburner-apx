@@ -3,7 +3,7 @@
 
 # bitburner-apx (Lily build)
 
-軽量・高効率の Bitburner スクリプト集です（Singularity不要の構成も多数）。
+軽量・高効率の Bitburner スクリプト集(AI生成）です（Singularity不要の構成も多数）。
 **すぐに使える**ことと、**RAM極小**を最優先に設計しています。
 
 ## ディレクトリ

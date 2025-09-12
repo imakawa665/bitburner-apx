@@ -1,9 +1,12 @@
-/** apx-backdoor.guide.v1.js (v1.2) */
+/** apx-backdoor.guide.v1.js (v1.2 HOTFIX: lock uses *.txt) */
 export async function main(ns) {
   ns.disableLog('sleep');
-  const F=ns.flags([['watch',3000],['lock','apx.lock.backdoor']]);
+  const F=ns.flags([['watch',3000],['lock','apx.lock.backdoor.txt']]);
   const SELF = ns.getRunningScript().filename;
-  const LOCK = String(F.lock||'apx.lock.backdoor');
+  // safety: if user passed a lock without extension, append .txt
+  let LOCK = String(F.lock||'apx.lock.backdoor.txt');
+  if (!LOCK.endsWith('.txt') && !LOCK.endsWith('.js')) LOCK += '.txt';
+
   const readPid = ()=>{ try{ return Number(ns.read(LOCK)||0); }catch{return 0;} };
   const alive = (pid)=> ns.ps('home').some(p=>p.pid===pid && p.filename===SELF);
   const old = readPid();

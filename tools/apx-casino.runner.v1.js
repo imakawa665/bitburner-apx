@@ -1,9 +1,10 @@
-/** apx-casino.runner.v1.js */
+/** apx-casino.runner.v1.js (HOTFIX: lock uses *.txt) */
 export async function main(ns){
   ns.disableLog('sleep');
-  const F=ns.flags([['goal',1e9],['script','casino.js'],['alt','bitburner-scripts-main/casino.js'],['args',''],['watch',5000],['log',true]]);
+  const F=ns.flags([['goal',1e9],['script','casino.js'],['alt','bitburner-scripts-main/casino.js'],['args',''],['watch',5000],['log',true],['lock','apx.lock.casino.txt']]);
   const print=(...a)=>{ if(F.log) ns.print('[casino]',...a); };
-  const LOCK='apx.lock.casino';
+  let LOCK = String(F.lock||'apx.lock.casino.txt');
+  if (!LOCK.endsWith('.txt') && !LOCK.endsWith('.js')) LOCK += '.txt';
   const readPid=()=>{ try{ return Number(ns.read(LOCK)||0);}catch{return 0;} };
   const alive=(pid)=> ns.ps('home').some(p=>p.pid===pid);
   const old=readPid(); if(old&&alive(old)) return ns.tprint(`[casino] already running (PID ${old})`);

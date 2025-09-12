@@ -1,4 +1,4 @@
-/** apx-rooter.auto.v1.js */
+/** apx-rooter.auto.v1.js (v1.1) */
 export async function main(ns) {
   const F=ns.flags([['interval',10000],['depth',1e9],['log',true]]);
   const print=(...a)=>{ if(F.log) ns.print('[rooter]',...a); };

@@ -9,7 +9,7 @@ export async function main(ns) {
   while(true){
     const n=ns.hacknet.numNodes(), money=ns.getServerMoneyAvailable('home'), budget=money*Math.max(0,Math.min(1,F.budget));
     let best = null;
-    try { const first = n>0 ? ns.hacknet.getNodeStats(0) : null; const c=cost.node(); if(!isNaN(c) && c<=budget && first){ const roi=c/(first.production||1); best={type:'node',idx:n,c,roi}; } } catch {}
+    try { const first = n>0 ? ns.hacknet.getNodeStats(0) : null; const c=cost.node(); if(!isNaN(c) && c<=budget && first){ const roi=c/(first.production||1); best={type:'node',idx=n,c,roi}; } } catch {}
     for(let i=0;i<n;i++){ for(const type of ['level','ram','core']){ const c = cost[type](i); if(c>budget) continue; const d = dGain(i,type); if(d<=0) continue; const roi = c / d; if(!best || roi < best.roi){ best = {type, idx:i, c, roi}; } } }
     if (best && best.roi <= F.maxROI) {
       log('upgrade',best.type,'@',best.idx,'cost',Math.round(best.c),'roi',Math.round(best.roi),'s');

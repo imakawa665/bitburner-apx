@@ -1,4 +1,7 @@
-/** apx-spread.remote.v1.js (v1.1) */
+
+/** apx-spread.remote.v1.js (v1.2 HOTFIX)
+ * - Skip deployment if target isn't rooted yet (no crash on HGW).
+ */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('scp'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
   const F=ns.flags([['target',''],['secPad',0.5],['moneyThr',0.95],['sleep',800],['minFree',1.6],['log',true]]);
@@ -7,7 +10,15 @@ export async function main(ns) {
   const purchased=new Set((ns.getPurchasedServers?.()??[]));
   const isHacknet=(h)=>h.startsWith('hacknet-server-')||h.startsWith('hacknet-node-');
   const scanAll=()=>{ const seen=new Set(['home']); const q=['home']; const order=[]; while(q.length){ const c=q.shift(); order.push(c); for(const n of ns.scan(c)) if(!seen.has(n)){ seen.add(n); q.push(n);} } return order; };
-  const target=F.target||(()=>{ const me=ns.getPlayer().skills.hacking; const c=['n00dles','foodnstuff','sigma-cosmetics','joesguns','nectar-net','hong-fang-tea','harakiri-sushi'].filter(h=>ns.serverExists(h)&&ns.hasRootAccess(h)&&ns.getServerRequiredHackingLevel(h)<=me); if(c.length===0)return'n00dles'; c.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return c[0]; })();
+  const pickTarget=()=>{
+    const me=ns.getPlayer().skills.hacking;
+    const roots=scanAll().filter(h=>h!=='home' && ns.serverExists(h) && ns.hasRootAccess(h) && ns.getServerRequiredHackingLevel(h)<=me && (ns.getServerMaxMoney(h)||0)>0);
+    if (F.target && ns.serverExists(F.target) && ns.hasRootAccess(F.target)) return F.target;
+    if (roots.length===0) return '';// none yet
+    roots.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return roots[0];
+  };
+  const target=pickTarget();
+  if (!target) { ns.tprint('[spread] ルート済みターゲットが無いため、デプロイを保留します'); return; }
   const hosts=scanAll().filter(h=>h!=='home' && h!=='darkweb' && !purchased.has(h) && !isHacknet(h) && ns.hasRootAccess(h));
   log('hosts',hosts.length,'target',target);
   for(const h of hosts){

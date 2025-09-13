@@ -1,6 +1,9 @@
-/** apx-casino.runner.v1.js (v1.6.2 HOTFIX)
- * - Waits until bankroll >= minTravel (default $200k) before launching casino.js
- * - Uses /Temp lock file and stays alive while waiting so daemon won't re-spawn it
+
+/** apx-casino.runner.v1.js (v1.6.3 HOTFIX)
+ * - Wait for bankroll >= minTravel before launch
+ * - Persistently track casino earnings and stop after banLimit (≈ $10b)
+ * - Mark "banned" on repeated early failures (no Blackjack / post-cap)
+ * - Use /Temp lock file to avoid duplicate spawns
  */
 export async function main(ns){
   ns.disableLog('sleep');
@@ -12,13 +15,26 @@ export async function main(ns){
     ['watch',5000],
     ['log',true],
     ['lock','/Temp/apx.lock.casino.txt'],
-    ['minTravel', 200000]  // Travel to Aevum requires $200k
+    ['minTravel', 200000],
+    ['banLimit', 1e10],
+    ['banFile','apx.state.casino.banned.txt'],
+    ['earnFile','apx.state.casino.earned.txt'],
+    ['failFile','apx.state.casino.failcount.txt'],
   ]);
   const print=(...a)=>{ if(F.log) ns.print('[casino]',...a); };
-  const LOCK=String(F.lock||'/Temp/apx.lock.casino.txt');
   const money=()=>ns.getServerMoneyAvailable('home');
+  const readNum=(f)=>{ try{ return Number(ns.read(f)||0);}catch{return 0;} };
+  const write=(f,s)=>{ try{ ns.write(f,String(s),'w'); }catch{} };
+  const inc=(f,d)=>{ write(f, readNum(f) + d ); };
+
+  // BAN persistence
+  if (ns.fileExists(F.banFile,'home')) {
+    const note = ns.read(F.banFile) || 'banned';
+    return ns.tprint(`[casino] disabled: ${note.trim()}`);
+  }
 
   // singleton lock
+  const LOCK=String(F.lock||'/Temp/apx.lock.casino.txt');
   const readPid=()=>{ try{ return Number(ns.read(LOCK)||0);}catch{return 0;} };
   const alive=(pid)=> ns.ps('home').some(p=>p.pid===pid);
   const old=readPid(); if(old&&alive(old)) return ns.tprint(`[casino] already running (PID ${old})`);
@@ -28,39 +44,74 @@ export async function main(ns){
   const goal = Math.max(1, Number(F.goal)||1e9);
   if (money() >= goal) return ns.tprint(`[casino] 既に目標資金に到達: $${money().toLocaleString()}`);
 
-  // --- NEW: wait until bankroll is enough to travel ---
+  // bankroll wait
   const need = Math.max(1, Number(F.minTravel)||200000);
   while (money() < need) {
     const m = money();
     ns.clearLog();
     ns.print(`[casino] Waiting bankroll to reach $${need.toLocaleString()} (current $${m.toLocaleString()})`);
-    ns.print(`[casino] Tip: oneclick is running micro/spread to earn starter funds.`);
     await ns.sleep(Math.max(1000, Number(F.watch)||5000));
   }
 
-  // choose casino.js path
+  // choose script
   let target = null;
   if (ns.fileExists(F.script,'home')) target = F.script;
   else if (ns.fileExists(F.alt,'home')) target = F.alt;
   else { ns.tprint(`[casino] casino.js が見つかりません。home に配置してください（例: ${F.script}）`); return; }
 
-  // pass-through args
   const args = String(F.args||'').trim().split(/\s+/).filter(Boolean);
 
-  // launch
+  // Early-failure guard: if we already crossed banLimit via previous runs, don't re-run
+  const prevEarn = readNum(F.earnFile);
+  if (prevEarn >= Number(F.banLimit||1e10)*0.999) {
+    write(F.banFile, `banned (earned≈$${prevEarn.toLocaleString()})`);
+    return ns.tprint(`[casino] 10b cap のため無効化（推定累計=$${prevEarn.toLocaleString()}）`);
+  }
+
   const pid = ns.run(target, 1, ...args);
-  if(pid===0){ ns.tprint(`[casino] 起動失敗: ${target}`); return; }
+  if(pid===0){ ns.tprint(`[casino] 起動失敗: ${target}`); inc(F.failFile,1); return; }
   ns.tprint(`[casino] 起動: ${target} (pid=${pid}) 目標=$${goal.toLocaleString()}  最低資金$${need.toLocaleString()}`);
   print('args', JSON.stringify(args));
 
-  // monitor
-  let last = money(), stagnation=0;
+  // monitor & earning accumulator
+  let last = money(), stagnation=0, earned=0, lastAlive=Date.now();
   while(true){
     const m=money();
+    if(m>last){ const delta = m-last; earned += delta; } // only count positive deltas
+    last=m;
+
+    // save progress occasionally
+    if (Date.now()-lastAlive > 5000) { lastAlive=Date.now(); const total = readNum(F.earnFile) + earned; write(F.earnFile, total); }
+
+    // cap check
+    const total = readNum(F.earnFile) + earned;
+    if(total >= Number(F.banLimit||1e10)*0.999){
+      write(F.earnFile, total);
+      write(F.banFile, `banned (earned≈$${total.toLocaleString()})`);
+      if (alive(pid)) ns.kill(pid);
+      ns.tprint(`[casino] 10b cap 到達と推定（累計≈$${total.toLocaleString()}）。以降は自動起動しません。`);
+      break;
+    }
+
     if(m>=goal){ ns.tprint(`[casino] 目標達成 $${m.toLocaleString()} >= $${goal.toLocaleString()}`); break; }
-    if(!alive(pid)){ ns.tprint(`[casino] casino.js が終了しました。現在: $${m.toLocaleString()}`); break; }
-    stagnation = (m<=last)?(stagnation+1):0; last=m;
+    if(!alive(pid)){
+      // if script died too fast -> count as failure and possibly mark banned
+      if (Date.now()-lastAlive < 5000) inc(F.failFile,1);
+      const fails = readNum(F.failFile);
+      if (fails >= 5) {
+        write(F.banFile, `disabled due to repeated early failures (fails=${fails})`);
+        ns.tprint(`[casino] 早期失敗が連続（${fails}回）。以降は無効化します。`);
+      } else {
+        ns.tprint(`[casino] casino.js が終了しました。現在: $${m.toLocaleString()}（fails=${fails}）`);
+      }
+      break;
+    }
+
+    stagnation = (m<=last)?(stagnation+1):0;
     if(stagnation>36){ ns.tprint(`[casino] 進展が見られませんでした（約{:.1f}分）。中断します。`.replace('{:.1f}', (F.watch*stagnation/60000).toFixed(1))); break; }
     await ns.sleep(Math.max(1000, Number(F.watch)||5000));
   }
+
+  // persist earned delta
+  if (earned>0) write(F.earnFile, readNum(F.earnFile)+earned);
 }

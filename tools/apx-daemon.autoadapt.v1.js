@@ -1,4 +1,5 @@
-/** apx-daemon.autoadapt.v1.js (v1.6) */
+
+/** apx-daemon.autoadapt.v1.js (v1.6 HOTFIX: casino ban respect) */
 export async function main(ns){
   ns.disableLog('sleep'); ns.disableLog('run'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
   const F=ns.flags([
@@ -17,14 +18,13 @@ export async function main(ns){
   const restart=async(file,args)=>{ if(!exists(file)) return false; const procs=ns.ps('home').filter(p=>p.filename===file); if(procs.length===0){ runOnce(file,1,...args); return true; } const same=procs.some(p=>JSON.stringify(p.args)===JSON.stringify(args)); if(!same){ for(const p of procs) ns.kill(p.pid); await ns.sleep(10); runOnce(file,1,...args); return true; } return false; };
 
   let lastSpread = 0, lastAdvice = 0, lastHeal = 0;
+  const casinoBanned = ns.fileExists('apx.state.casino.banned.txt','home');
 
   while(true){
     runOnce('tools/apx-faction.join.assist.v1.js', 1);
 
-    if (F.casino && ns.getServerMoneyAvailable('home') < Number(F.casinoGoal||1e9)) {
-      if (exists('tools/apx-casino.runner.v1.js')) {
-        runOnce('tools/apx-casino.runner.v1.js', 1, '--goal', Number(F.casinoGoal||1e9));
-      }
+    if (F.casino && !casinoBanned && ns.getServerMoneyAvailable('home') < Number(F.casinoGoal||1e9)) {
+      if (exists('tools/apx-casino.runner.v1.js')) runOnce('tools/apx-casino.runner.v1.js', 1, '--goal', Number(F.casinoGoal||1e9));
     }
 
     const max=ns.getServerMaxRam('home'), used=ns.getServerUsedRam('home'); const free=Math.max(0,max-used); const freeRatio=max>0?free/max:0;
@@ -37,7 +37,8 @@ export async function main(ns){
     }
 
     const tgt = (()=>{ const L=['n00dles','foodnstuff','sigma-cosmetics','joesguns','nectar-net','hong-fang-tea','harakiri-sushi']; const me=ns.getPlayer().skills.hacking; const c=L.filter(h=>ns.serverExists(h)&&ns.hasRootAccess(h)&&ns.getServerRequiredHackingLevel(h)<=me); if(c.length===0) return 'n00dles'; c.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return c[0]; })();
-    const ht = ns.getHackTime(tgt); const batchWanted = (freeRatio>=F.batchMinFree) && (ht<=20000);
+    const ht = ns.getHackTime(tgt); const freeRatio2=(ns.getServerMaxRam('home')-ns.getServerUsedRam('home'))/Math.max(1,ns.getServerMaxRam('home'));
+    const batchWanted = (freeRatio2>=F.batchMinFree) && (ht<=20000);
     if (batchWanted) { const hackPct = ht<=5000 ? 0.05 : 0.03; const args=['--target',tgt,'--hackPct',hackPct,'--gap',200,'--log','true']; if (await restart('tools/apx-hgw-batcher.v1.2.js', args)) print('batch restart',tgt,hackPct); }
     else { for(const p of ns.ps('home').filter(p=>p.filename==='tools/apx-hgw-batcher.v1.2.js')) ns.kill(p.pid); }
 

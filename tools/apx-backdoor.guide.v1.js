@@ -1,18 +1,16 @@
-/** apx-backdoor.guide.v1.js (v1.2 HOTFIX: lock uses *.txt) */
+
+/** apx-backdoor.guide.v1.js (v1.2.1 HOTFIX: use ns.ui.openTail) */
 export async function main(ns) {
   ns.disableLog('sleep');
-  const F=ns.flags([['watch',3000],['lock','apx.lock.backdoor.txt']]);
+  const F=ns.flags([['watch',3000],['lock','/Temp/apx.lock.backdoor.txt']]);
   const SELF = ns.getRunningScript().filename;
-  // safety: if user passed a lock without extension, append .txt
-  let LOCK = String(F.lock||'apx.lock.backdoor.txt');
-  if (!LOCK.endsWith('.txt') && !LOCK.endsWith('.js')) LOCK += '.txt';
-
+  const LOCK = String(F.lock||'/Temp/apx.lock.backdoor.txt');
   const readPid = ()=>{ try{ return Number(ns.read(LOCK)||0); }catch{return 0;} };
   const alive = (pid)=> ns.ps('home').some(p=>p.pid===pid && p.filename===SELF);
   const old = readPid();
   if (old && alive(old)) { ns.tprint(`[backdoor.guide] already running (PID ${old}). exit.`); return; }
   ns.write(LOCK, String(ns.pid), 'w');
-  ns.atExit(()=>{ try{ const cur=readPid(); if(cur===ns.pid) ns.rm(LOCK,'home'); }catch{} });
+  ns.atExit(()=>{ try{ const cur=readPid(); if(cur===ns.pid) ns.rm(LOCK); }catch{} });
 
   const SPECIAL=['CSEC','avmnite-02h','I.I.I.I','run4theh111z','w0r1d_d43m0n'].filter(h=>ns.serverExists(h));
   const find=(t)=>{ const q=['home'],p={home:null},seen=new Set(['home']); while(q.length){ const c=q.shift(); for(const n of ns.scan(c)){ if(seen.has(n))continue; seen.add(n); p[n]=c; q.push(n); if(n===t){ q.length=0; break; } } } if(!p.hasOwnProperty(t)) return null; const path=[]; let x=t; while(x){ path.push(x); x=p[x]; } path.reverse(); return path; };
@@ -22,5 +20,7 @@ export async function main(ns) {
 
   let tailed=false;
   while(true){ const me=ns.getPlayer().skills.hacking; const rows=[]; for(const h of SPECIAL){ if(!ns.serverExists(h)) continue; const r=row(h); if(r.back){ r.note='(済)'; rows.push(r); continue; } if(r.req>me){ r.note=`(Hack ${r.req}必要)`; rows.push(r); continue; } if(!r.rooted){ r.note='(root未取得)'; rows.push(r); continue; } const path=find(h); if(path){ r.cmd=gen(path); r.note='(準備OK)'; } else r.note='(到達不可)'; rows.push(r); }
-    rows.sort((a,b)=>{ const ra=(a.back?2:(a.cmd?0:1)), rb=(b.back?2:(b.cmd?0:0)); if(ra!==rb) return ra-rb; return (a.req||0)-(b.req||0); }); show(rows); if(!tailed){ ns.tail(); tailed=true; } const top=rows.find(r=>r.cmd); if(top?.cmd) ns.write('connect-backdoor.txt', top.cmd+'\n', 'w'); if(!F.watch || Number(F.watch)<=0) break; await ns.sleep(Math.max(500, Number(F.watch))); }
+    rows.sort((a,b)=>{ const ra=(a.back?2:(a.cmd?0:1)), rb=(b.back?2:(b.cmd?0:0)); if(ra!==rb) return ra-rb; return (a.req||0)-(b.req||0); }); show(rows);
+    if(!tailed){ try{ ns.ui.openTail(ns.getRunningScript().pid); }catch{ try{ ns.tail(); }catch{} } tailed=true; }
+    const top=rows.find(r=>r.cmd); if(top?.cmd) ns.write('connect-backdoor.txt', top.cmd+'\n', 'w'); if(!F.watch || Number(F.watch)<=0) break; await ns.sleep(Math.max(500, Number(F.watch))); }
 }

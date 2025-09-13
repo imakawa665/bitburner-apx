@@ -1,9 +1,9 @@
 
-/** apx-casino.runner.v1.js (v1.6.3 HOTFIX)
- * - Wait for bankroll >= minTravel before launch
- * - Persistently track casino earnings and stop after banLimit (≈ $10b)
- * - Mark "banned" on repeated early failures (no Blackjack / post-cap)
- * - Use /Temp lock file to avoid duplicate spawns
+/** apx-casino.runner.v1.js (v1.6.4 HOTFIX-2)
+ * - Wait until bankroll >= minTravel
+ * - Persist earnings / ban near $10b
+ * - Mark ban after 2 fast early failures
+ * - Kill self if ban detected mid-run
  */
 export async function main(ns){
   ns.disableLog('sleep');
@@ -20,6 +20,8 @@ export async function main(ns){
     ['banFile','apx.state.casino.banned.txt'],
     ['earnFile','apx.state.casino.earned.txt'],
     ['failFile','apx.state.casino.failcount.txt'],
+    ['fastMs', 3000],        // early-exit threshold
+    ['failBan', 2]           // fast fails needed to ban
   ]);
   const print=(...a)=>{ if(F.log) ns.print('[casino]',...a); };
   const money=()=>ns.getServerMoneyAvailable('home');
@@ -28,10 +30,7 @@ export async function main(ns){
   const inc=(f,d)=>{ write(f, readNum(f) + d ); };
 
   // BAN persistence
-  if (ns.fileExists(F.banFile,'home')) {
-    const note = ns.read(F.banFile) || 'banned';
-    return ns.tprint(`[casino] disabled: ${note.trim()}`);
-  }
+  if (ns.fileExists(F.banFile,'home')) return ns.tprint(`[casino] disabled: ${String(ns.read(F.banFile)||'banned').trim()}`);
 
   // singleton lock
   const LOCK=String(F.lock||'/Temp/apx.lock.casino.txt');
@@ -47,6 +46,7 @@ export async function main(ns){
   // bankroll wait
   const need = Math.max(1, Number(F.minTravel)||200000);
   while (money() < need) {
+    if (ns.fileExists(F.banFile,'home')) return; // disabled while waiting
     const m = money();
     ns.clearLog();
     ns.print(`[casino] Waiting bankroll to reach $${need.toLocaleString()} (current $${m.toLocaleString()})`);
@@ -61,27 +61,29 @@ export async function main(ns){
 
   const args = String(F.args||'').trim().split(/\s+/).filter(Boolean);
 
-  // Early-failure guard: if we already crossed banLimit via previous runs, don't re-run
+  // Early-calc: if we previously earned near cap, disable
   const prevEarn = readNum(F.earnFile);
   if (prevEarn >= Number(F.banLimit||1e10)*0.999) {
     write(F.banFile, `banned (earned≈$${prevEarn.toLocaleString()})`);
     return ns.tprint(`[casino] 10b cap のため無効化（推定累計=$${prevEarn.toLocaleString()}）`);
   }
 
+  // launch and monitor
+  const startTs = Date.now();
   const pid = ns.run(target, 1, ...args);
   if(pid===0){ ns.tprint(`[casino] 起動失敗: ${target}`); inc(F.failFile,1); return; }
   ns.tprint(`[casino] 起動: ${target} (pid=${pid}) 目標=$${goal.toLocaleString()}  最低資金$${need.toLocaleString()}`);
   print('args', JSON.stringify(args));
 
-  // monitor & earning accumulator
-  let last = money(), stagnation=0, earned=0, lastAlive=Date.now();
+  let last = money(), stagnation=0, earned=0, lastSave=Date.now();
   while(true){
+    if (ns.fileExists(F.banFile,'home')) { if (alive(pid)) ns.kill(pid); break; }
     const m=money();
-    if(m>last){ const delta = m-last; earned += delta; } // only count positive deltas
+    if(m>last){ const delta = m-last; earned += delta; } // count positive deltas
     last=m;
 
-    // save progress occasionally
-    if (Date.now()-lastAlive > 5000) { lastAlive=Date.now(); const total = readNum(F.earnFile) + earned; write(F.earnFile, total); }
+    // save progress periodically
+    if (Date.now()-lastSave > 5000) { lastSave=Date.now(); const total = readNum(F.earnFile) + earned; write(F.earnFile, total); }
 
     // cap check
     const total = readNum(F.earnFile) + earned;
@@ -94,11 +96,12 @@ export async function main(ns){
     }
 
     if(m>=goal){ ns.tprint(`[casino] 目標達成 $${m.toLocaleString()} >= $${goal.toLocaleString()}`); break; }
+
     if(!alive(pid)){
-      // if script died too fast -> count as failure and possibly mark banned
-      if (Date.now()-lastAlive < 5000) inc(F.failFile,1);
+      const life = Date.now()-startTs;
+      if (life < Number(F.fastMs)||3000) inc(F.failFile,1);
       const fails = readNum(F.failFile);
-      if (fails >= 5) {
+      if (fails >= Number(F.failBan)||2) {
         write(F.banFile, `disabled due to repeated early failures (fails=${fails})`);
         ns.tprint(`[casino] 早期失敗が連続（${fails}回）。以降は無効化します。`);
       } else {
@@ -112,6 +115,5 @@ export async function main(ns){
     await ns.sleep(Math.max(1000, Number(F.watch)||5000));
   }
 
-  // persist earned delta
   if (earned>0) write(F.earnFile, readNum(F.earnFile)+earned);
 }

@@ -1,5 +1,5 @@
 
-/** apx-daemon.autoadapt.v1.js (v1.6 HOTFIX: casino ban respect) */
+/** apx-daemon.autoadapt.v1.js (v1.6 HOTFIX-2: casino ban live-check) */
 export async function main(ns){
   ns.disableLog('sleep'); ns.disableLog('run'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
   const F=ns.flags([
@@ -18,13 +18,19 @@ export async function main(ns){
   const restart=async(file,args)=>{ if(!exists(file)) return false; const procs=ns.ps('home').filter(p=>p.filename===file); if(procs.length===0){ runOnce(file,1,...args); return true; } const same=procs.some(p=>JSON.stringify(p.args)===JSON.stringify(args)); if(!same){ for(const p of procs) ns.kill(p.pid); await ns.sleep(10); runOnce(file,1,...args); return true; } return false; };
 
   let lastSpread = 0, lastAdvice = 0, lastHeal = 0;
-  const casinoBanned = ns.fileExists('apx.state.casino.banned.txt','home');
 
   while(true){
+    const casinoBanned = ns.fileExists('apx.state.casino.banned.txt','home');
+
+    // Ensure faction invite assist always running
     runOnce('tools/apx-faction.join.assist.v1.js', 1);
 
+    // Casino launcher with live ban check
     if (F.casino && !casinoBanned && ns.getServerMoneyAvailable('home') < Number(F.casinoGoal||1e9)) {
       if (exists('tools/apx-casino.runner.v1.js')) runOnce('tools/apx-casino.runner.v1.js', 1, '--goal', Number(F.casinoGoal||1e9));
+    } else {
+      // If banned (or not needed), kill any stray casino runner
+      for (const p of ns.ps('home').filter(p=>p.filename==='tools/apx-casino.runner.v1.js')) ns.kill(p.pid);
     }
 
     const max=ns.getServerMaxRam('home'), used=ns.getServerUsedRam('home'); const free=Math.max(0,max-used); const freeRatio=max>0?free/max:0;

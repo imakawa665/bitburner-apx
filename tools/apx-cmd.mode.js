@@ -1,2 +1,1 @@
-/** tools/apx-cmd.mode.js: placeholder */
-export async function main(ns){ ns.tprint('[cmd:mode] OK'); }
+export async function main(ns){ const m=String(ns.args[0]||''); if(m==='rep'){ ns.run('tools/apx-oneclick.lily.js',1,'--profile','rep'); } else { ns.run('tools/apx-oneclick.lily.js',1,'--profile','autofull'); } }

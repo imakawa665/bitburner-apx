@@ -1,2 +1,1 @@
-/** tools/apx-cmd.pause.js: placeholder */
-export async function main(ns){ ns.tprint('[cmd:pause] OK'); }
+export async function main(ns){ for(const p of ns.ps('home')) if(p.filename.includes('apx-') && p.pid!==ns.pid) ns.kill(p.pid); ns.tprint('[cmd] paused.'); }

@@ -1,2 +1,1 @@
-/** tools/apx-cmd.pinTarget.js: placeholder */
-export async function main(ns){ ns.tprint('[cmd:pinTarget] OK'); }
+export async function main(ns){ const t=String(ns.args[0]||''); if(!t){ ns.tprint('usage: run tools/apx-cmd.pinTarget.js <host>'); return; } ns.write('/Temp/apx.pin.target.txt',t,'w'); ns.tprint('[pin] target='+t); }

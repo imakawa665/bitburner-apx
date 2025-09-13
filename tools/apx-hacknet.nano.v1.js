@@ -1,22 +1,30 @@
-/** apx-hacknet.nano.v1.js (v1.1) */
-export async function main(ns) {
-  ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable');
-  const F=ns.flags([['budget',0.2],['maxROI',3600],['interval',5000],['log',true]]);
-  const log=(...a)=>{ if(F.log) ns.print('[hacknet]',...a); };
-  const c={ node:()=>ns.hacknet.getPurchaseNodeCost(), level:(i)=>ns.hacknet.getLevelUpgradeCost(i,1), ram:(i)=>ns.hacknet.getRamUpgradeCost(i,1), core:(i)=>ns.hacknet.getCoreUpgradeCost(i,1) };
-  const dGain=(i,type)=>{ const s=ns.hacknet.getNodeStats(i), base=s.production; if(type==='level') return (s.level+1)/s.level*base-base; if(type==='ram') return base*0.07; if(type==='core') return base*0.04; return 0; };
+/** tools/apx-hacknet.nano.v1.js - tiny budgeted investor */
+export async function main(ns){
+  ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable'); ns.clearLog();
+  const F=ns.flags([['budget',0.2],['maxROI',3600],['log',true]]);
+  const print=(...a)=>{ if(F.log) ns.print('[hacknet]',...a); };
+  function reserve(){ try{ return Number(ns.read('reserve.txt')||0); }catch{return 0;} }
+  function money(){ return Math.max(0, ns.getServerMoneyAvailable('home') - reserve()); }
+  function valueDeltaAfter(cost, gainPerSec){ return gainPerSec>0 ? cost/gainPerSec : 1e99; } // ROI(s)
   while(true){
-    const n=ns.hacknet.numNodes(), money=ns.getServerMoneyAvailable('home'), budget=money*Math.max(0,Math.min(1,F.budget));
-    let best=null;
     try{
-      const nodeCost=c.node();
-      if(n===0 && Number.isFinite(nodeCost) && nodeCost<=budget){ best={type:'node',idx:0,cost:nodeCost,roi:0}; }
-      else if(n>0){ const first=ns.hacknet.getNodeStats(0); if(!isNaN(nodeCost)&&nodeCost<=budget&&first){ const roi=nodeCost/Math.max(1,(first.production||1)); best={type:'node',idx:n,cost:nodeCost,roi}; } }
-    }catch{}
-    for(let i=0;i<n;i++){
-      for(const type of ['level','ram','core']){ const cost=c[type](i); if(cost>budget) continue; const gain=dGain(i,type); if(gain<=0) continue; const roi=cost/gain; if(!best||roi<best.roi) best={type,idx:i,cost,roi}; }
-    }
-    if(best && best.roi<=F.maxROI){ log('upgrade',best.type,'@',best.idx,'cost',Math.round(best.cost),'roi',Math.round(best.roi),'s'); if(best.type==='node') ns.hacknet.purchaseNode(); else if(best.type==='level') ns.hacknet.upgradeLevel(best.idx,1); else if(best.type==='ram') ns.hacknet.upgradeRam(best.idx,1); else if(best.type==='core') ns.hacknet.upgradeCore(best.idx,1); } else { log('skip', best?('minROI='+Math.round(best.roi)+'s'):'no candidate'); }
-    await ns.sleep(F.interval);
+      let budget = money()*Math.max(0,Number(F.budget)||0.2);
+      let did=false;
+      // try purchase new node
+      const buyCost=ns.hacknet.getPurchaseNodeCost?.()||Infinity;
+      const gainNew = 0.001; // rough baseline
+      if (buyCost<=budget && valueDeltaAfter(buyCost, gainNew) <= Number(F.maxROI||3600)){ ns.hacknet.purchaseNode?.(); print('buy node'); did=true; }
+      // upgrades (rough greedy)
+      const n=ns.hacknet.numNodes?.()||0;
+      for(let i=0;i<n;i++){
+        const l=ns.hacknet.getLevelUpgradeCost?.(i,1)||Infinity;
+        if(!did && l<=budget){ ns.hacknet.upgradeLevel?.(i,1); budget-=l; did=true; }
+        const r=ns.hacknet.getRamUpgradeCost?.(i,1)||Infinity;
+        if(!did && r<=budget){ ns.hacknet.upgradeRam?.(i,1); budget-=r; did=true; }
+        const c=ns.hacknet.getCoreUpgradeCost?.(i,1)||Infinity;
+        if(!did && c<=budget){ ns.hacknet.upgradeCore?.(i,1); budget-=c; did=true; }
+      }
+      if(!did) await ns.sleep(2000);
+    }catch{ await ns.sleep(2000); }
   }
 }

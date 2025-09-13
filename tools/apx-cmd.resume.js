@@ -1,2 +1,1 @@
-/** tools/apx-cmd.resume.js: placeholder */
-export async function main(ns){ ns.tprint('[cmd:resume] OK'); }
+export async function main(ns){ ns.run('tools/apx-oneclick.lily.js',1,'--profile','autofull'); }

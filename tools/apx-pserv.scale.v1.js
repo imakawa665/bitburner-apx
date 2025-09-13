@@ -1,46 +1,38 @@
-
-/** tools/apx-pserv.scale.v1.js (v1.0)
- * 目的: 既存の購入サーバ群を、予算の範囲で順次スケールアップ（置換）する。
- * 仕様:
- *   - --budget <0..1> : 所持金の何割までを使うか（既定0.3）
- *   - 最も小さいRAMのサーバから、購入可能な最大RAMへ「置換」
- *   - 25台に未達なら新規購入を優先
- */
+/** tools/apx-pserv.scale.v1.js (v1.1 reserve-aware) */
 export async function main(ns){
-  ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable'); ns.disableLog('getPurchasedServerCost');
-  const F=ns.flags([['budget',0.30],['prefix','px-'],['interval',3000],['log',true]]);
+  ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable'); ns.clearLog();
+  const F = ns.flags([['budget',0.3],['minRam',8],['maxRam',16384],['reserveFile','reserve.txt'],['interval',2500],['log',false]]);
   const log=(...a)=>{ if(F.log) ns.print('[pserv.scale]',...a); };
-  const lim = ns.getPurchasedServerLimit();
-  const maxRam = ns.getPurchasedServerMaxRam();
-  const cost = r=>ns.getPurchasedServerCost(r);
-  const money = ()=>ns.getServerMoneyAvailable('home');
-  function list(){ return ns.getPurchasedServers().sort((a,b)=>ns.getServerMaxRam(a)-ns.getServerMaxRam(b)); }
-  function affordableMax(){
-    let r=2; while(r<=maxRam && cost(r)<=money()*Number(F.budget||0.3)) r*=2; return r/2;
-  }
+  const prefix='px-'; const maxServers=25;
+  const reserve=()=>{ try{ return Math.max(0, Number(ns.read(String(F.reserveFile)||'reserve.txt')||0)); }catch{return 0;} };
+  const cash=()=> Math.max(0, ns.getServerMoneyAvailable('home') - reserve());
+  const price=(gb)=> ns.getPurchasedServerCost(gb);
+  const owned=()=> Array.from({length: maxServers}, (_,i)=> `${prefix}${String(i+1).padStart(6,'0')}`).filter(h=>ns.serverExists(h));
+
   while(true){
-    let servers = list();
-    const want = Math.max(2, affordableMax());
-    if (servers.length<lim){
-      if (want>=2){
-        const name = `${F.prefix}${Date.now().toString().slice(-6)}`;
-        const pid = ns.purchaseServer(name, want);
-        if(pid){ ns.tprint(`[pserv.scale] PURCHASE ${name} ${want}GB`); servers=list(); }
-      }
-    } else {
-      // 置換：最小RAMと最大RAMの差があるときだけ
-      servers = list();
-      const smallest = servers[0]; const sram = ns.getServerMaxRam(smallest);
-      if (want > sram){
-        // 対象停止→削除→購入→deployなし（micro/daemonに委任）
-        for(const p of ns.ps(smallest)) ns.kill(p.pid);
-        ns.deleteServer(smallest);
-        const name = `${F.prefix}${Date.now().toString().slice(-6)}`;
-        if (ns.purchaseServer(name, want)){
-          ns.tprint(`[pserv.scale] REPLACE ${smallest} (${sram}GB) -> ${name} (${want}GB)`);
+    try{
+      const hosts=owned().map(h=>({h,ram:ns.getServerMaxRam(h)})).sort((a,b)=>a.ram-b.ram);
+      let budget=cash()*Math.max(0,Number(F.budget)||0.3);
+      if (hosts.length<maxServers){
+        let gb=Math.max(Number(F.minRam)||8, 2);
+        while(price(gb*2)<=budget && gb*2<=Number(F.maxRam||16384)) gb*=2;
+        if (price(gb)<=budget){
+          const hostname=ns.purchaseServer(prefix+String(Date.now()).slice(-6), gb);
+          if(hostname){ log('buy',hostname,gb+'GB'); budget-=price(gb); }
+        }
+      } else {
+        const smallest=hosts[0];
+        let targetRam=Math.max(smallest.ram*2, Number(F.minRam)||8);
+        while(price(targetRam*2)<=budget && targetRam*2<=Number(F.maxRam||16384)) targetRam*=2;
+        if (targetRam>smallest.ram && price(targetRam)<=budget){
+          ns.killall(smallest.h); await ns.sleep(50);
+          if(ns.deleteServer(smallest.h)){
+            const newHost=ns.purchaseServer(prefix+String(Date.now()).slice(-6), targetRam);
+            if(newHost){ log('replace',smallest.h,'->',newHost, targetRam+'GB'); }
+          }
         }
       }
-    }
-    await ns.sleep(Math.max(500, Number(F.interval)||3000));
+    }catch{}
+    await ns.sleep(Math.max(800, Number(F.interval)||2500));
   }
 }

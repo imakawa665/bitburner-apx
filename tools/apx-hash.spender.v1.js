@@ -1,10 +1,32 @@
-/** tools/apx-hash.spender.v1.js */
+/** tools/apx-hash.spender.v1.js (v1.2) */
 export async function main(ns){
-  ns.disableLog('sleep'); const F=ns.flags([['threshold',0.9],['mode','money'],['log',true]]);
-  const modes={'money':'Sell for Money','corp':'Sell for Corporation Funds'}; const which=modes[F.mode]||modes.money;
+  ns.disableLog('sleep'); ns.clearLog();
+  const F=ns.flags([['mode','auto'],['threshold',0.8],['target','']]);
+  const repMark='/Temp/apx.mode.rep'; const has=(f)=>ns.fileExists(f,'home');
+
+  function readPin(){ try{ const t=(ns.read('/Temp/apx.pin.target.txt')||'').trim(); return t||null; }catch{return null;} }
+  function bestTarget(){
+    const pin = String(F.target||'').trim() || readPin();
+    if (pin && ns.serverExists(pin)) return pin;
+    const me=ns.getPlayer(); const seen=new Set(); const q=['home']; const cand=[];
+    while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); }
+    for(const h of seen){ if(h==='home') continue; try{ const sv=ns.getServer(h); if(!sv.hasAdminRights) continue; if(sv.requiredHackingSkill>me.skills.hacking) continue; if(sv.moneyMax<=0) continue; const sec=sv.minDifficulty||1; const money=sv.moneyMax||1; const tHack=ns.getHackTime(h)||1; const score=(money/Math.max(1,tHack))*(1.5-Math.min(1,sec/100)); cand.push([score,h]); }catch{} }
+    cand.sort((a,b)=>b[0]-a[0]); return (cand[0]||[])[1]||'n00dles';
+  }
   while(true){
     try{
-      const have=ns.hacknet.numHashes?.()||0, cap=ns.hacknet.hashCapacity?.()||0; if(cap>0 && have>=cap*Number(F.threshold||0.9)){ while( (ns.hacknet.numHashes?.()||0) >= 4 ){ ns.hacknet.spendHashes(which); if(F.log) ns.print('[hash] spend ->',which); } }
-    }catch{} await ns.sleep(2000);
+      const cap=ns.hacknet.hashCapacity?.()||0, n=ns.hacknet.numHashes?.()||0;
+      if (cap>0 && n/cap >= Number(F.threshold||0.8)){
+        const tgt=bestTarget();
+        let spent=false;
+        if (has(repMark)){
+          if (ns.hacknet.spendHashes?.('Reduce Minimum Security', tgt)) spent=true;
+          if (!spent) spent = ns.hacknet.spendHashes?.('Increase Maximum Money', tgt) || false;
+        }
+        if (!spent) spent = ns.hacknet.spendHashes?.('Sell for Money') || false;
+        if (!spent) await ns.sleep(250);
+      }
+    }catch{}
+    await ns.sleep(400);
   }
 }

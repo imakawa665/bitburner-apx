@@ -1,2 +1,2 @@
-/** workers/apx-g1.js: single grow worker */
-export async function main(ns){ const F=ns.flags([['target','n00dles']]); await ns.grow(String(F.target)); }
+/** workers/apx-g1.js */
+export async function main(ns){ const t=String(ns.args[0]||'n00dles'); await ns.grow(t); }

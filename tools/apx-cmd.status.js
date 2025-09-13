@@ -1,2 +1,1 @@
-/** tools/apx-cmd.status.js: placeholder */
-export async function main(ns){ ns.tprint('[cmd:status] OK'); }
+export async function main(ns){ for(const p of ns.ps('home')) ns.tprint(p.pid, p.filename, JSON.stringify(p.args)); }

@@ -1,13 +1,9 @@
-/** tools/apx-faction.join.assist.v1.js - accept faction invites (Singularity if available, else DOM heuristics) */
+
+/** tools/apx-faction.join.assist.v1.js - auto-accept faction invitations */
 export async function main(ns){
-  ns.disableLog('sleep');
+  ns.disableLog('sleep'); ns.clearLog();
   while(true){
-    try{
-      const invites=ns.singularity?.checkFactionInvitations?.()||[];
-      for(const f of invites){ try{ if(ns.singularity?.joinFaction?.(f)) ns.tprint(`[faction] join ${f}`); }catch{} }
-      // DOM fallback (best-effort)
-      const doc=eval('document'); const facBtn=[...doc.querySelectorAll('button,div,span,a')].find(e=>(String(e.textContent||'').toLowerCase()).includes('factions')); if(facBtn){ facBtn.click(); await ns.sleep(80); const acc=[...doc.querySelectorAll('button')].find(e=>(String(e.textContent||'').toLowerCase()).includes('accept')); if(acc){ acc.click(); await ns.sleep(80); } }
-    }catch{}
+    try{ const inv=ns.singularity?.checkFactionInvitations?.()||[]; for(const f of inv){ try{ ns.singularity.joinFaction?.(f); ns.tprint('[faction] joined '+f); }catch{} } }catch{}
     await ns.sleep(5000);
   }
 }

@@ -1,1 +1,3 @@
-export async function main(ns){ const t=String(ns.args[0]||''); if(!t){ ns.tprint('usage: run tools/apx-cmd.pinTarget.js <host>'); return; } ns.write('/Temp/apx.pin.target.txt',t,'w'); ns.tprint('[pin] target='+t); }
+
+/** tools/apx-cmd.pinTarget.js - write /Temp/apx.pin.target.txt */
+export async function main(ns){ const t=String(ns.args[0]||''); ns.write('/Temp/apx.pin.target.txt',t,'w'); ns.tprint('[pinTarget] '+t); }

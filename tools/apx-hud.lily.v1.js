@@ -1,29 +1,64 @@
-/** tools/apx-hud.lily.v1.js (light HUD, stats.js-inspired)
- * Uses overview-extra-hook-0/1; removes lines on exit; low-RAM polling.
+
+/** tools/apx-hud.lily.v1.js
+ * 2列HUD（overview-extra-hook-0/1）に、必要な情報を低コストで表示。
+ * - ns.atExit でクリーンアップ（重複回避）
+ * - 必要時のみ取得（Hashes/Share/Servers等）
  */
 export async function main(ns){
-  ns.disableLog('sleep'); const doc=eval('document');
-  const h0=doc.getElementById('overview-extra-hook-0'), h1=doc.getElementById('overview-extra-hook-1');
-  const add=(id,t,tip="")=>{ const p=doc.createElement('p'); p.className='tooltip'; const s=doc.createElement('span'); s.textContent=t; const tt=doc.createElement('span'); tt.textContent=tip; tt.className='tooltiptext'; p.appendChild(s); p.appendChild(tt); p.id=id; return p; };
-  const rows=[['APX',''],['Cash',''],['Home',''],['All RAM',''],['Share',''],['Target','']];
-  for(const [k,_] of rows){ h0.appendChild(add(`apx-${k}-t`,k)); h1.appendChild(add(`apx-${k}-v`,'...')); }
-  ns.atExit(()=>{ for(const [k,_] of rows){ const e0=doc.getElementById(`apx-${k}-t`), e1=doc.getElementById(`apx-${k}-v`); if(e0?.remove) e0.remove(); if(e1?.remove) e1.remove(); } });
-
-  function set(k,v){ const e=doc.getElementById(`apx-${k}-v`); if(e) e.firstChild.textContent=' '+v; }
-
+  ns.disableLog('sleep');
+  const doc = eval('document');
+  const hook0 = doc.getElementById('overview-extra-hook-0');
+  const hook1 = doc.getElementById('overview-extra-hook-1');
+  const rows = {};
+  function line(id,header,value,tip=""){
+    const p = doc.createElement("p"); p.className="tooltip";
+    const a=doc.createElement("span"); a.textContent=header.padEnd(9," "); p.appendChild(a);
+    const b=doc.createElement("span"); b.textContent=value; b.className='tooltiptext'; p.appendChild(b);
+    rows[id]=[a,b,p];
+    return p;
+  }
+  function show(id,val,tip=""){
+    if(!rows[id]) return;
+    if(val==null){ rows[id][2].style.display='none'; return; }
+    rows[id][2].style.display='';
+    rows[id][1].textContent=tip;
+    rows[id][0].textContent = rows[id][0].textContent.replace(/\s+$/,' ') + ((' '+String(val)).trim()?(' '+String(val).trim()):'');
+  }
+  ns.atExit(()=>{ try{ hook0.innerHTML=""; hook1.innerHTML=""; }catch{} });
+  // CSS front
+  try{
+    let prior = doc.getElementById("apxHUDCSS");
+    if(prior) prior.parentElement.removeChild(prior);
+    const parent = doc.getElementsByClassName('MuiCollapse-root')[0]?.parentElement;
+    if(parent) parent.style.zIndex = 10000;
+    doc.head.insertAdjacentHTML('beforeend', `<style id="apxHUDCSS">
+      .MuiTooltip-popper { z-index: 10001 }
+      .tooltip { margin: 0; position: relative; }
+      .tooltip .tooltiptext { visibility: hidden; position: absolute; right: 20px; top: 19px; padding: 2px 10px; white-space: pre; border-radius: 6px; background-color: #090a; }
+      .tooltip:hover .tooltiptext { visibility: visible; opacity: 0.9; }
+    </style>`);
+  }catch{}
+  // initial rows
+  const defs=[["Mode","-","APX"],["Share","-",""],["Hashes","-",""],["HomeRAM","-",""],["AllRAM","-",""],["Income","-",""],["Exp","-",""],["Reserve","-",""]];
+  for(const [h,v,t] of defs){ hook0.appendChild(line(h+"-t",h,t)); hook1.appendChild(line(h+"-v","",t)); }
   while(true){
-    try{
-      set('APX','v1.9.3');
-      set('Cash', ns.nFormat(ns.getServerMoneyAvailable('home'),'$0.00a'));
-      const mx=ns.getServerMaxRam('home'), used=ns.getServerUsedRam('home'); set('Home', `${ns.nFormat(mx, '0.0') }GB ${(100*used/mx).toFixed(1)}%`);
-      // All RAM
-      let tot=0, use=0; const seen=new Set(); const q=['home']; while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); try{ const sv=ns.getServer(s); if(sv.hasAdminRights){ tot+=sv.maxRam; use+=sv.ramUsed; } }catch{} }
-      set('All RAM', `${ns.nFormat(tot,'0.0')}GB ${(tot>0?(100*use/tot):0).toFixed(1)}%`);
-      set('Share', ns.getSharePower().toFixed(2));
-      // Target (pin or auto best)
-      let tgt=(ns.read('/Temp/apx.pin.target.txt')||'').trim(); if(!tgt){ const me=ns.getPlayer(); const seen2=new Set(); const q2=['home']; const cand=[]; while(q2.length){ const s=q2.pop(); if(seen2.has(s)) continue; seen2.add(s); for(const n of ns.scan(s)) q2.push(n); if(s==='home') continue; try{ const sv=ns.getServer(s); if(!sv.hasAdminRights || sv.requiredHackingSkill>me.skills.hacking || sv.moneyMax<=0) continue; const score=(sv.moneyMax/(ns.getHackTime(s)||1))*(1.5-Math.min(1,(sv.minDifficulty||1)/100)); cand.push([score,s]); }catch{} } cand.sort((a,b)=>b[0]-a[0]); tgt=(cand[0]||[])[1]||'n00dles'; }
-      set('Target', tgt);
-    }catch{}
-    await ns.sleep(1200);
+    const share=ns.getSharePower();
+    show("Mode-v", (ns.fileExists('/Temp/apx.mode.rep','home')?'REP':'AUTO'),"Current APX mode");
+    show("Share-v", share>1.0001 ? share.toFixed(2) : null, "Share power (boosts faction rep)");
+    const hashesCap = ns.hacknet.hashCapacity?.()||0;
+    if(hashesCap>0){ const n=ns.hacknet.numHashes?.()||0; show("Hashes-v", `${n.toFixed(0)}/${hashesCap.toFixed(0)}`, "Current/Capacity"); }
+    const maxH=ns.getServerMaxRam('home'), usedH=ns.getServerUsedRam('home');
+    show("HomeRAM-v", `${ns.formatRam(maxH)} ${(100*usedH/maxH).toFixed(1)}%`,"Home RAM usage");
+    // total RAM
+    (function(){
+      const seen=new Set(); const q=['home']; let tUsed=0,tMax=0;
+      while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); }
+      for(const h of seen){ try{ const sv=ns.getServer(h); if(!sv.hasAdminRights) continue; tUsed+=sv.ramUsed||0; tMax+=sv.maxRam||0; }catch{} }
+      show("AllRAM-v", `${ns.formatRam(tMax)} ${(tMax? (100*tUsed/tMax).toFixed(1):'0.0')}%`, "Total rooted RAM usage");
+    })();
+    const inc = ns.getTotalScriptIncome?.()||[0,0]; show("Income-v", ns.nFormat(inc[0],"$0.00a")+"/s","Instant script income");
+    const exp = ns.getTotalScriptExpGain?.()||0; show("Exp-v", ns.nFormat(exp,"0.0a")+"/s","Instant EXP gain");
+    const reserve = Number(ns.read('reserve.txt')||0); show("Reserve-v", reserve>0?ns.nFormat(reserve,"$0.00a"):null,"Reserved cash (won't be spent)");
+    await ns.sleep(1000);
   }
 }

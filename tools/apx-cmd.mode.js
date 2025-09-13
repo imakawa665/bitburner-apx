@@ -1,1 +1,3 @@
-export async function main(ns){ const m=String(ns.args[0]||''); if(m==='rep'){ ns.run('tools/apx-oneclick.lily.js',1,'--profile','rep'); } else { ns.run('tools/apx-oneclick.lily.js',1,'--profile','autofull'); } }
+
+/** tools/apx-cmd.mode.js - toggle modes for APX */
+export async function main(ns){ const m=String(ns.args[0]||'').toLowerCase(); if(m==='rep'){ ns.write('/Temp/apx.mode.rep','1','w'); } else { if(ns.fileExists('/Temp/apx.mode.rep','home')) ns.rm('/Temp/apx.mode.rep','home'); } ns.tprint('[mode] '+m); }

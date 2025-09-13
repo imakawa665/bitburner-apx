@@ -1,1 +1,1 @@
-export async function main(ns){ ns.run('tools/apx-oneclick.lily.js',1,'--profile','autofull'); }
+export async function main(ns){ if(ns.fileExists('/Temp/apx.pause','home')) ns.rm('/Temp/apx.pause','home'); ns.tprint('[resume]'); }

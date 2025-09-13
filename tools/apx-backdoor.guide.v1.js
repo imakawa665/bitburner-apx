@@ -1,9 +1,9 @@
-/** tools/apx-backdoor.guide.v1.js - show key servers */
+
+/** tools/apx-backdoor.guide.v1.js - print guide for next backdoorable servers */
 export async function main(ns){
-  const list=[['CSEC',60],['avmnite-02h',212],['I.I.I.I',361],['run4theh111z',508],['The-Cave',940]];
-  ns.tail(); ns.print('=== Backdoor Guide ===');
-  for(const [name,req] of list){
-    const root=ns.hasRootAccess(name)?'Y':'-'; ns.print(`${name} | req:${req} | root:${root}`);
-  }
-  await ns.sleep(60000);
+  ns.disableLog('sleep'); ns.clearLog();
+  function rooted(){ const seen=new Set(); const q=['home']; const out=[]; while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); } for(const h of seen){ try{ const sv=ns.getServer(h); if(!sv.hasAdminRights) continue; out.push(h);}catch{} } return out; }
+  const me=ns.getPlayer().skills.hacking;
+  const cand=rooted().map(h=>({h,req:ns.getServer(h).requiredHackingSkill||0,back:ns.getServer(h).backdoorInstalled})).filter(x=>!x.back).sort((a,b)=>a.req-b.req);
+  ns.tprint('=== Backdoor Guide ==='); for(const c of cand.slice(0,10)){ ns.tprint(`${c.h.padEnd(20)} | req:${c.req} | backdoor:${c.back?'Y':'-'}`); }
 }

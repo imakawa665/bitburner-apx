@@ -1,1 +1,1 @@
-export async function main(ns){ for(const p of ns.ps('home')) ns.tprint(p.pid, p.filename, JSON.stringify(p.args)); }
+export async function main(ns){ ns.tprint('[status] rep='+(ns.fileExists('/Temp/apx.mode.rep','home')?'on':'off')); }

@@ -1,7 +1,8 @@
-/** tools/apx-install.js (v1.9.3 Full Manifest) */
+
+/** tools/apx-install.js (v1.9.3) */
 export async function main(ns) {
   ns.disableLog("sleep");
-  const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false],["retry",0]]);
+  const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false]]);
   const FILES = [
     "core/apx-core.micro.v2.09.js","rooter/apx-rooter.auto.v1.js",
     "workers/apx-w1.js","workers/apx-g1.js","workers/apx-h1.js","workers/apx-loop-hgw.nano.js",
@@ -13,7 +14,7 @@ export async function main(ns) {
     "tools/apx-backdoor.guide.v1.js","tools/apx-casino.runner.v1.js",
     "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js","tools/apx-darkweb.autobuyer.v1.js",
     "tools/apx-autopilot.full.v1.js","tools/apx-backdoor.auto.dom.v1.js","tools/apx-study.train.dom.v1.js",
-    "tools/apx-faction.work.dom.v1.js","tools/apx-pserv.scale.v1.js","tools/apx-reserve.set.v1.js"
+    "tools/apx-faction.work.dom.v1.js","tools/apx-pserv.scale.v1.js"
   ];
   let base = f.raw;
   if (!base) {

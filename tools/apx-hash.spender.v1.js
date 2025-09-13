@@ -1,9 +1,10 @@
+
 /** tools/apx-hash.spender.v1.js (v1.2) */
 export async function main(ns){
   ns.disableLog('sleep'); ns.clearLog();
   const F=ns.flags([['mode','auto'],['threshold',0.8],['target','']]);
-  const repMark='/Temp/apx.mode.rep'; const has=(f)=>ns.fileExists(f,'home');
-
+  const repMark='/Temp/apx.mode.rep';
+  const has=(f)=>ns.fileExists(f,'home');
   function readPin(){ try{ const t=(ns.read('/Temp/apx.pin.target.txt')||'').trim(); return t||null; }catch{return null;} }
   function bestTarget(){
     const pin = String(F.target||'').trim() || readPin();
@@ -17,8 +18,7 @@ export async function main(ns){
     try{
       const cap=ns.hacknet.hashCapacity?.()||0, n=ns.hacknet.numHashes?.()||0;
       if (cap>0 && n/cap >= Number(F.threshold||0.8)){
-        const tgt=bestTarget();
-        let spent=false;
+        const tgt=bestTarget(); let spent=false;
         if (has(repMark)){
           if (ns.hacknet.spendHashes?.('Reduce Minimum Security', tgt)) spent=true;
           if (!spent) spent = ns.hacknet.spendHashes?.('Increase Maximum Money', tgt) || false;

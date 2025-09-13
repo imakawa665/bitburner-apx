@@ -1,1 +1,1 @@
-export async function main(ns){ for(const p of ns.ps('home')) if(p.filename.includes('apx-') && p.pid!==ns.pid) ns.kill(p.pid); ns.tprint('[cmd] paused.'); }
+export async function main(ns){ ns.write('/Temp/apx.pause','1','w'); ns.tprint('[pause]'); }

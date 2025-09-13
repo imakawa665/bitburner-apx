@@ -1,5 +1,5 @@
 
-/** apx-install.js (v1.8.3) - manifest includes crime.repeat.dom */
+/** apx-install.js (v1.8.4 no-crime) */
 export async function main(ns) {
   ns.disableLog("sleep");
   const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false],["retry",0]]);
@@ -12,7 +12,7 @@ export async function main(ns) {
     "tools/apx-cmd.pause.js","tools/apx-cmd.resume.js","tools/apx-cmd.status.js","tools/apx-cmd.pinTarget.js","tools/apx-cmd.mode.js",
     "tools/apx-oneclick.lily.js","tools/apx-daemon.autoadapt.v1.js","tools/apx-healthcheck.v1.js","tools/apx-install.js","tools/apx-startup.lily.js",
     "tools/apx-backdoor.guide.v1.js","tools/apx-casino.runner.v1.js",
-    "tools/apx-crime.repeat.v1.js","tools/apx-crime.repeat.dom.v1.js","tools/apx-karma.watch.v1.js",
+    "tools/apx-karma.watch.v1.js",                         /* 残しますが、インストーラ/Autopilotからは起動しません */
     "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js","tools/apx-darkweb.autobuyer.v1.js",
     "tools/apx-autopilot.full.v1.js","tools/apx-backdoor.auto.dom.v1.js","tools/apx-study.train.dom.v1.js"
   ];

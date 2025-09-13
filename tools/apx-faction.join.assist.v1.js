@@ -1,15 +1,11 @@
-/** apx-faction.join.assist.v1.js */
+/** tools/apx-faction.join.assist.v1.js */
 export async function main(ns){
   ns.disableLog('sleep');
-  const F=ns.flags([['interval',600],['log',false]]);
-  const log=(...a)=>{ if(F.log) ns.print('[faction]',...a); };
-  const doc = eval('document');
-  const clickByText=(texts)=>{ const T=Array.isArray(texts)?texts:[texts]; const els=Array.from(doc.querySelectorAll('button,[role="button"],.MuiButton-root,span,div'));
-    for(const t of T){ const tt=String(t||'').toLowerCase(); const el=els.find(e=>(e.innerText||'').trim().toLowerCase().includes(tt) && !e.disabled); if(el){ el.click(); log('click',t); return true; } } return false; };
-  while(true){
-    clickByText(['faction invitation','invitation']);
-    if (clickByText(['accept','join'])) { log('accepted'); }
-    clickByText(['ok','close']);
-    await ns.sleep(Math.max(200, Number(F.interval)));
-  }
+  try{
+    if (ns.singularity?.checkFactionInvitations){
+      const inv=ns.singularity.checkFactionInvitations(); for(const f of inv){ ns.singularity.joinFaction(f); ns.tprint(`[faction] joined: ${f}`); }
+    } else {
+      ns.print('[faction] Singularity未所持: 招待は通知から手動承諾してください');
+    }
+  }catch{} await ns.sleep(1);
 }

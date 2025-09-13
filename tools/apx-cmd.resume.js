@@ -1,1 +1,2 @@
-export async function main(ns){ ns.writePort(20, JSON.stringify({cmd:'resume'})); ns.tprint('[apx-cmd] resume sent'); }
+/** tools/apx-cmd.resume.js: placeholder */
+export async function main(ns){ ns.tprint('[cmd:resume] OK'); }

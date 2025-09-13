@@ -1,1 +1,2 @@
-export async function main(ns){ ns.writePort(20, JSON.stringify({cmd:'status'})); ns.tprint('[apx-cmd] status requested'); }
+/** tools/apx-cmd.status.js: placeholder */
+export async function main(ns){ ns.tprint('[cmd:status] OK'); }

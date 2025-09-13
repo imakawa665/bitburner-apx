@@ -1,18 +1,10 @@
-/** apx-hash.spender.v1.js */
+/** tools/apx-hash.spender.v1.js */
 export async function main(ns){
-  ns.disableLog('sleep');
-  const F=ns.flags([['threshold',0.9],['mode','money'],['interval',2000],['log',false]]);
-  const log=(...a)=>{ if(F.log) ns.print('[hash]',...a); };
+  ns.disableLog('sleep'); const F=ns.flags([['threshold',0.9],['mode','money'],['log',true]]);
+  const modes={'money':'Sell for Money','corp':'Sell for Corporation Funds'}; const which=modes[F.mode]||modes.money;
   while(true){
-    let cap=0, h=0; try{ cap=ns.hacknet.hashCapacity(); h=ns.hacknet.numHashes(); }catch{ await ns.sleep(F.interval); continue; }
-    if(cap>0 && h>=cap*F.threshold){
-      let ok=false;
-      if(F.mode==='money') ok = ns.hacknet.spendHashes('Sell for Money');
-      else if(F.mode==='corp') ok = ns.hacknet.spendHashes('Exchange for Corporation Research');
-      else if(F.mode==='study') ok = ns.hacknet.spendHashes('Improve Studying');
-      else ok = ns.hacknet.spendHashes('Sell for Money');
-      log('spend', ok, 'hashes', h.toFixed(1), '/', cap.toFixed(1));
-    }
-    await ns.sleep(F.interval);
+    try{
+      const have=ns.hacknet.numHashes?.()||0, cap=ns.hacknet.hashCapacity?.()||0; if(cap>0 && have>=cap*Number(F.threshold||0.9)){ while( (ns.hacknet.numHashes?.()||0) >= 4 ){ ns.hacknet.spendHashes(which); if(F.log) ns.print('[hash] spend ->',which); } }
+    }catch{} await ns.sleep(2000);
   }
 }

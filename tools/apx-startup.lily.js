@@ -1,2 +1,2 @@
-/** apx-startup.lily.js */
-export async function main(ns){ if(!ns.isRunning('tools/apx-oneclick.lily.js','home')) ns.run('tools/apx-oneclick.lily.js'); }
+/** tools/apx-startup.lily.js */
+export async function main(ns){ ns.run('tools/apx-oneclick.lily.js',1,'--profile','autofull'); }

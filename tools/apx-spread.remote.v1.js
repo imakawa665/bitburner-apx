@@ -1,25 +1,14 @@
-
-/** apx-spread.remote.v1.js (v1.2 HOTFIX)
- * - Skip deployment if target isn't rooted yet (no crash on HGW).
- */
+/** tools/apx-spread.remote.v1.js (v1.2) */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('scp'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
   const F=ns.flags([['target',''],['secPad',0.5],['moneyThr',0.95],['sleep',800],['minFree',1.6],['log',true]]);
   const log=(...a)=>{ if(F.log) ns.print('[spread]',...a); };
   const files=['workers/apx-w1.js','workers/apx-g1.js','workers/apx-h1.js','workers/apx-loop-hgw.nano.js'].filter(f=>ns.fileExists(f,'home'));
-  const purchased=new Set((ns.getPurchasedServers?.()??[]));
-  const isHacknet=(h)=>h.startsWith('hacknet-server-')||h.startsWith('hacknet-node-');
   const scanAll=()=>{ const seen=new Set(['home']); const q=['home']; const order=[]; while(q.length){ const c=q.shift(); order.push(c); for(const n of ns.scan(c)) if(!seen.has(n)){ seen.add(n); q.push(n);} } return order; };
-  const pickTarget=()=>{
-    const me=ns.getPlayer().skills.hacking;
-    const roots=scanAll().filter(h=>h!=='home' && ns.serverExists(h) && ns.hasRootAccess(h) && ns.getServerRequiredHackingLevel(h)<=me && (ns.getServerMaxMoney(h)||0)>0);
-    if (F.target && ns.serverExists(F.target) && ns.hasRootAccess(F.target)) return F.target;
-    if (roots.length===0) return '';// none yet
-    roots.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return roots[0];
-  };
-  const target=pickTarget();
-  if (!target) { ns.tprint('[spread] ルート済みターゲットが無いため、デプロイを保留します'); return; }
-  const hosts=scanAll().filter(h=>h!=='home' && h!=='darkweb' && !purchased.has(h) && !isHacknet(h) && ns.hasRootAccess(h));
+  const me=ns.getPlayer().skills.hacking;
+  const pickTarget=()=>{ const roots=scanAll().filter(h=>h!=='home' && ns.serverExists(h) && ns.hasRootAccess(h) && ns.getServerRequiredHackingLevel(h)<=me && (ns.getServerMaxMoney(h)||0)>0); if (F.target && ns.serverExists(F.target) && ns.hasRootAccess(F.target)) return F.target; if (roots.length===0) return ''; roots.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return roots[0]; };
+  const target=pickTarget(); if (!target) { ns.tprint('[spread] ルート済みターゲットが無いため保留'); return; }
+  const hosts=scanAll().filter(h=>h!=='home' && h!=='darkweb' && ns.hasRootAccess(h));
   log('hosts',hosts.length,'target',target);
   for(const h of hosts){
     const max=ns.getServerMaxRam(h), used=ns.getServerUsedRam(h); const free=Math.max(0,max-used);

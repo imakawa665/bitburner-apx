@@ -1,23 +1,27 @@
-/** apx-core.micro.v2.09.js (v2.09b) */
-export async function main(ns) {
-  ns.disableLog('sleep'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
-  ns.clearPort(20); ns.clearPort(21);
-  const FLAGS = ns.flags([['cmdPort',20],['statPort',21],['mode','auto'],['target',''],['secPad',0.25],['moneyThr',0.85],['wgSleep',250],['allRooted',true],['reserveRamPct',0.1],['log',true]]);
-  const log=(...a)=>{ if(FLAGS.log) ns.print('[micro]',...a); };
-  const writePort=(p, msg)=>{ try{ return ns.tryWritePort ? ns.tryWritePort(p,msg) : ns.writePort(p,msg); }catch{ return ns.writePort(p,msg);} };
-  const st={paused:false,mode:FLAGS.mode,target:FLAGS.target||'',lastPush:0,lastPick:0,lastScan:0,discovered:['n00dles','foodnstuff']};
-  const discover=()=>{ if(!FLAGS.allRooted&&st.discovered.length>0) return st.discovered; if(Date.now()-st.lastScan<2000) return st.discovered; const seen=new Set(['home']); const q=['home']; while(q.length){ const cur=q.pop(); for(const n of ns.scan(cur)){ if(!seen.has(n)){ seen.add(n); q.push(n);} } } st.discovered=[...seen].filter(h=>h!=='home'); st.lastScan=Date.now(); return st.discovered; };
-  const cands=()=>{ const me=ns.getPlayer().skills.hacking; const skip=new Set(['home','darkweb',...(ns.getPurchasedServers?.()??[])]); const list=[]; for(const h of discover()){ if(skip.has(h))continue; if(!ns.serverExists(h))continue; if(!ns.hasRootAccess(h))continue; if(ns.getServerRequiredHackingLevel(h)>me)continue; if((ns.getServerMaxMoney(h)||0)<=0)continue; list.push(h);} return list; };
-  const scoreOf=(h)=>{ const mmax=ns.getServerMaxMoney(h)||0; const ht=ns.getHackTime(h)||1; const req=ns.getServerRequiredHackingLevel(h)||1; return (mmax/(1+req)) / Math.max(1, ht); };
-  const pick=()=>{ if(st.target&&ns.serverExists(st.target))return st.target; if(Date.now()-st.lastPick<2500&&st.target) return st.target; let best='',score=-1; for(const h of cands()){ const s=scoreOf(h); if(s>score){score=s;best=h;} } st.lastPick=Date.now(); if(best!==st.target){ log('pick',best); } st.target=best; return best; };
-  const snap=(h)=>!h?null:{money:ns.getServerMoneyAvailable(h),max:ns.getServerMaxMoney(h),sec:ns.getServerSecurityLevel(h),min:ns.getServerMinSecurityLevel(h)};
-  const push=()=>{ const p=ns.getPlayer(); const t=st.target||pick(); const s=t?snap(t):null; writePort(FLAGS.statPort, JSON.stringify({ts:Date.now(),paused:st.paused,mode:st.mode,target:t,money:Math.floor(p.money),snap:s})); };
-  const runFill=async(file,args=[],prefer=1e9)=>{ const max=ns.getServerMaxRam('home'),used=ns.getServerUsedRam('home'); let free=Math.max(0,max-used); const reserve=Math.max(0,Math.min(0.9,Number(FLAGS.reserveRamPct)||0)); free=Math.max(0, free - max*reserve); if(free<1) return 0; let th=Math.min(prefer,Math.max(1,Math.floor(free/2))); let started=0; while(th>0){ const pid=ns.run(file,th,...args); if(pid!==0){started=th;break;} th=Math.floor(th/2); await ns.sleep(20);} if(started>0) log('runFill',file,'t',started); return started; };
-  const cmd=(m)=>{ if(!m||m==='NULL PORT DATA')return; let c; try{c=JSON.parse(m);}catch{return;} if(c.cmd==='pause')st.paused=true; else if(c.cmd==='resume')st.paused=false; else if(c.cmd==='mode'&&['auto','hack','grow','weaken'].includes(c.mode))st.mode=c.mode; else if(c.cmd==='target'&&typeof c.host==='string'&&ns.serverExists(c.host))st.target=c.host; else if(c.cmd==='status')push(); };
-  const H='workers/apx-h1.js', G='workers/apx-g1.js', W='workers/apx-w1.js';
+/** core/apx-core.micro.v2.09.js (lightweight)
+ * Deploy loop-hgw to rooted hosts, respecting reserve RAM on home.
+ */
+export async function main(ns){
+  ns.disableLog('sleep'); ns.disableLog('scp'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
+  const F=ns.flags([['allRooted',true],['reserveRamPct',0.1],['sleep',8000],['log',true]]);
+  const log=(...a)=>{ if(F.log) ns.print('[micro]',...a); };
+  const files=['workers/apx-loop-hgw.nano.js'].filter(f=>ns.fileExists(f,'home'));
+  const scanAll=()=>{ const seen=new Set(['home']); const q=['home']; const order=[]; while(q.length){ const c=q.shift(); order.push(c); for(const n of ns.scan(c)) if(!seen.has(n)){ seen.add(n); q.push(n);} } return order; };
+  const pickTarget=()=>{
+    const me=ns.getPlayer().skills.hacking;
+    const roots=scanAll().filter(h=>h!=='home' && ns.serverExists(h) && ns.hasRootAccess(h) && ns.getServerRequiredHackingLevel(h)<=me && (ns.getServerMaxMoney(h)||0)>0);
+    if (roots.length===0) return 'n00dles'; roots.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0)); return roots[0];
+  };
   while(true){
-    for(let i=0;i<30;i++){ const m=ns.readPort(FLAGS.cmdPort); if(m==='NULL PORT DATA')break; cmd(m);} const tgt=pick(); if(!tgt){ if(Date.now()-st.lastPick>2000) log('no target: waiting NUKE/root'); await ns.sleep(200); continue; }
-    if(!st.paused){ const s=snap(tgt); let mode=st.mode; if(mode==='auto'){ if(s.sec>s.min+FLAGS.secPad)mode='weaken'; else if(s.max>0&&s.money<s.max*FLAGS.moneyThr)mode='grow'; else mode='hack'; } log('mode',mode,'tgt',tgt,'$=',(s?.money||0).toFixed(0),'sec=',s?.sec?.toFixed(2)); if(mode==='weaken') await runFill(W,[tgt]); else if(mode==='grow') await runFill(G,[tgt]); else await runFill(H,[tgt],128); }
-    if(Date.now()-st.lastPush>800){ push(); st.lastPush=Date.now(); } await ns.sleep(FLAGS.wgSleep);
+    const target=pickTarget();
+    const hosts=scanAll().filter(h=>h!=='home' && ns.hasRootAccess(h));
+    for(const h of hosts){
+      const max=ns.getServerMaxRam(h), used=ns.getServerUsedRam(h); const free=Math.max(0,max-used);
+      if(h==='home'){ const reserve=(ns.getServerMaxRam('home')||0)*(Math.max(0,Math.min(1,Number(F.reserveRamPct)||0))); if((max-used)<=reserve) continue; }
+      if(files.length) { try{ await ns.scp(files,h); }catch{} }
+      const cost=ns.getScriptRam('workers/apx-loop-hgw.nano.js','home')||1.6; const th=Math.max(1,Math.floor(free/cost));
+      if(th>=1 && !ns.isRunning('workers/apx-loop-hgw.nano.js',h)){ ns.exec('workers/apx-loop-hgw.nano.js',h,th,'--target',target); log('start',h,'t',th,'→',target); }
+    }
+    await ns.sleep(Number(F.sleep)||8000);
   }
 }

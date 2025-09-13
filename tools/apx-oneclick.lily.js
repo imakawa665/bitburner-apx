@@ -1,6 +1,4 @@
-/** tools/apx-oneclick.lily.js (v1.8)
- * - 追加: --autopilot / profile=autofull で「全自動オーケストレーター」を起動
- */
+/** tools/apx-oneclick.lily.js (v1.8) */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('run'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam'); ns.clearLog();
   const F = ns.flags([
@@ -12,29 +10,15 @@ export async function main(ns) {
     ['pservBudget', 0.3], ['pservMin', 8], ['pservMax', 8192],
     ['sharePct', 0.25],
     ['withBatcher', false], ['target', ''], ['hackPct', 0.03], ['gap', 200], ['lanes', 1],
-    // darkweb buyer flags
-    ['darkweb', true], ['dwMode','ports'], ['dwQol', false],
-    ['dwSafety', 1.0], ['dwMethod','auto'], ['dwInterval', 1500],
+    ['darkweb', true], ['dwMode','ports'], ['dwQol', false], ['dwSafety', 1.0], ['dwMethod','auto'], ['dwInterval', 1500],
     ['log', true],
   ]);
   const print=(...a)=>{ if(F.log) ns.print('[oneclick]',...a); };
   const isAny=(f)=> ns.ps('home').some(p=>p.filename===f);
   const exists=(f)=>ns.fileExists(f,'home');
   const runOnce=(f,th=1,...args)=>{ if(!exists(f)){ ns.print(`[oneclick] missing: ${f}`); return 0;} if(isAny(f)) return 1; const pid=ns.run(f,th,...args); if(pid===0) ns.tprint(`[oneclick] failed: ${f}`); else print('start',f,'pid',pid,'args',JSON.stringify(args)); return pid?1:0; };
-
-  const pf=String(F.profile||'').toLowerCase();
-  if (pf==='autofull') F.autopilot=true;
-
-  if (F.autopilot) {
-    // 全自動：オーケストレーターに委譲
-    runOnce('tools/apx-autopilot.full.v1.js',1,'--interval',5000,'--goal',1e9,'--uiLock','/Temp/apx.ui.lock.txt','--crimeAuto',false);
-    ns.tprint(`[oneclick] 起動: autopilot (v1.8)`);
-    return;
-  }
-
-  // 既存の従来モード（省略）: 以前のv1.7相当の処理を簡略化
-  ns.tprint('[oneclick] v1.8: 従来モード起動（必要なら --autopilot 推奨）');
-  // 主要サービスだけ起動
+  const pf=String(F.profile||'').toLowerCase(); if (pf==='autofull') F.autopilot=true;
+  if (F.autopilot) { runOnce('tools/apx-autopilot.full.v1.js',1,'--interval',5000,'--goal',1e9,'--uiLock','/Temp/apx.ui.lock.txt','--crimeAuto',false); ns.tprint(`[oneclick] 起動: autopilot (v1.8)`); return; }
   if (F.rooter) runOnce('rooter/apx-rooter.auto.v1.js', 1, '--interval', 10000, '--log');
   if (F.hud) runOnce('tools/apx-hud.lily.v1.js');
   if (F.micro) runOnce('core/apx-core.micro.v2.09.js', 1, '--allRooted', 'true', '--reserveRamPct', 0.1, '--log', 'true');

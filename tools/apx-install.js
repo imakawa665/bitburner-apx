@@ -1,7 +1,12 @@
-/** apx-install.js (v1.6 full) */
+
+/** apx-install.js (v1.7)
+ * - Manifest updated: includes Dark Web Auto Buyer and all APX scripts.
+ * Usage:
+ *   run tools/apx-install.js --user <user> --repo <repo> [--branch main] [--start]
+ */
 export async function main(ns) {
   ns.disableLog("sleep");
-  const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false]]);
+  const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false],["retry",0]]);
   const FILES = [
   "core/apx-core.micro.v2.09.js",
   "rooter/apx-rooter.auto.v1.js",
@@ -33,7 +38,8 @@ export async function main(ns) {
   "tools/apx-crime.repeat.v1.js",
   "tools/apx-karma.watch.v1.js",
   "tools/apx-faction.join.assist.v1.js",
-  "tools/apx-stanek.charge.v1.js"
+  "tools/apx-stanek.charge.v1.js",
+  "tools/apx-darkweb.autobuyer.v1.js"
 ];
   let base = f.raw;
   if (!base) {
@@ -43,11 +49,12 @@ export async function main(ns) {
   let ok=0, ng=0;
   for (const rel of FILES) {
     try {
-      const r = await ns.wget(base + rel, rel, "home");
+      const url = base + rel;
+      const r = await ns.wget(url, rel, "home");
       if (r) { ok++; ns.print("OK  ", rel); } else { ng++; ns.print("NG  ", rel); }
       await ns.sleep(20);
     } catch { ng++; ns.print("ERR ", rel); }
   }
-  ns.tprint(`[apx-install] done: OK=${ok}, NG=${ng}`);
+  ns.tprint(`[apx-install] done: OK=${ok}, NG=${ng}  (branch=${f.branch})`);
   if (f.start) { ns.run("tools/apx-oneclick.lily.js"); }
 }

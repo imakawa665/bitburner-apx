@@ -1,4 +1,8 @@
-/** apx-hacknet.nano.v1.js (safe & low-RAM) */
+
+/** apx-hacknet.nano.v1.js (v1.1)
+ * - 初回ノード（n==0）でも自動購入するように修正
+ * - 低RAM・安全
+ */
 export async function main(ns) {
   ns.disableLog('sleep'); ns.disableLog('getServerMoneyAvailable');
   const F=ns.flags([['budget',0.2],['maxROI',3600],['interval',5000],['log',true]]);
@@ -20,10 +24,16 @@ export async function main(ns) {
           budget=money*Math.max(0,Math.min(1,F.budget));
     let best=null;
     try{
-      const first=n>0?ns.hacknet.getNodeStats(0):null;
-      const cost=c.node();
-      if(!isNaN(cost)&&cost<=budget&&first){
-        const roi=cost/(first.production||1); best={type:'node',idx:n,cost,roi};
+      // --- NEW: first node purchase ---
+      const nodeCost=c.node();
+      if(n===0 && Number.isFinite(nodeCost) && nodeCost<=budget){
+        best={type:'node',idx:0,cost:nodeCost,roi:0}; // 無条件で最初の1台を買う
+      } else {
+        // 既存ノードがある場合は従来のROI判定
+        const first=n>0?ns.hacknet.getNodeStats(0):null;
+        if(n>0 && !isNaN(nodeCost) && nodeCost<=budget && first){
+          const roi=nodeCost/Math.max(1,(first.production||1)); best={type:'node',idx:n,cost:nodeCost,roi};
+        }
       }
     }catch{}
     for(let i=0;i<n;i++){

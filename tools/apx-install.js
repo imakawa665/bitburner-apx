@@ -1,5 +1,5 @@
 
-/** apx-install.js (v1.8.2) - adds crime.repeat.dom to manifest */
+/** apx-install.js (v1.8.3) - manifest includes crime.repeat.dom */
 export async function main(ns) {
   ns.disableLog("sleep");
   const f = ns.flags([["user",""],["repo",""],["branch","main"],["raw",""],["start",false],["retry",0]]);

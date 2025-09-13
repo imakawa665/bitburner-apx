@@ -1,6 +1,7 @@
 
-/** apx-install.js (v1.7)
- * - Manifest updated: includes Dark Web Auto Buyer and all APX scripts.
+/** apx-install.js (v1.8)
+ * Manifest updated: +autopilot.full / +backdoor.auto.dom / +study.train.dom
+ * and batcher hotfix (v1.2.3) path retained as tools/apx-hgw-batcher.v1.2.js.
  * Usage:
  *   run tools/apx-install.js --user <user> --repo <repo> [--branch main] [--start]
  */
@@ -39,11 +40,14 @@ export async function main(ns) {
   "tools/apx-karma.watch.v1.js",
   "tools/apx-faction.join.assist.v1.js",
   "tools/apx-stanek.charge.v1.js",
-  "tools/apx-darkweb.autobuyer.v1.js"
+  "tools/apx-darkweb.autobuyer.v1.js",
+  "tools/apx-autopilot.full.v1.js",
+  "tools/apx-backdoor.auto.dom.v1.js",
+  "tools/apx-study.train.dom.v1.js"
 ];
   let base = f.raw;
   if (!base) {
-    if (!f.user || !f.repo) return ns.tprint("usage: run apx-install.js --user <user> --repo <repo> [--branch main] [--start]");
+    if (!f.user || !f.repo) return ns.tprint("usage: run tools/apx-install.js --user <user> --repo <repo> [--branch main] [--start]");
     base = `https://raw.githubusercontent.com/${f.user}/${f.repo}/${f.branch}/`;
   }
   let ok=0, ng=0;
@@ -56,5 +60,5 @@ export async function main(ns) {
     } catch { ng++; ns.print("ERR ", rel); }
   }
   ns.tprint(`[apx-install] done: OK=${ok}, NG=${ng}  (branch=${f.branch})`);
-  if (f.start) { ns.run("tools/apx-oneclick.lily.js"); }
+  if (f.start) { ns.run("tools/apx-oneclick.lily.js",1,"--profile","autofull"); }
 }

@@ -1,24 +1,66 @@
-/** apx-hgw-batcher.v1.2.js */
-export async function main(ns) {
-  ns.disableLog('sleep');
-  const F=ns.flags([['target','n00dles'],['hackPct',-1],['gap',200],['lanes',1],['loop',true],['log',true]]);
-  const t=String(F.target);
-  const log=(...a)=>{ if(F.log) ns.print('[batch]',...a); };
-  if(!ns.serverExists(t) || (ns.getServerMaxMoney(t)||0)<=0) return ns.tprint(`[batcher] 無効ターゲット: ${t}`);
-  const autoPct=()=>{ const ht=ns.getHackTime(t); if(ht<=4000) return 0.08; if(ht<=8000) return 0.06; if(ht<=15000) return 0.04; return 0.03; };
-  const pct = (Number(F.hackPct)>=0) ? Math.min(0.99, Math.max(0.001, Number(F.hackPct))) : autoPct();
-  const can=async(file,th,...args)=>{ if(th<=0) return 0; let started=0,tryTh=th; while(tryTh>0){ const pid=ns.run(file,tryTh,...args); if(pid!==0){started=tryTh;break;} tryTh=Math.floor(tryTh/2); if(tryTh===1){ if(ns.run(file,1,...args)!==0){started=1;break;} else break;} await ns.sleep(5);} log('run',file,'t',started); return started; };
-  const schedule=async(offset=0)=>{ const s=ns.getServer(t); const ht=ns.getHackTime(t), gt=ns.getGrowTime(t), wt=ns.getWeakenTime(t); const max=s.moneyMax||ns.getServerMaxMoney(t); const cur=Math.max(1,ns.getServerMoneyAvailable(t));
-    const hackThreads=Math.max(1,Math.floor(ns.hackAnalyzeThreads(t, cur*pct))); const moneyAfterHack=Math.max(1, cur - ns.hackAnalyze(t) * cur * hackThreads);
-    const growAmountNeeded=Math.max(1,max)/Math.max(1,moneyAfterHack); const growThreads=Math.max(1,Math.ceil(ns.growthAnalyze(t,growAmountNeeded)));
-    const secIncHack=0.002*hackThreads, secIncGrow=0.004*growThreads, wpt=0.05; const w1=Math.ceil(secIncHack/wpt), w2=Math.ceil(secIncGrow/wpt);
-    log('calc',{pct,hackThreads,growThreads,w1,w2,ht,gt,wt,laneOffset:offset});
-    const now=Date.now(), gap=Math.max(50,Number(F.gap)), end=now+wt+4*gap+offset; const times={ w2:end-wt, g:end-gt-gap, w1:end-wt-2*gap, h:end-ht-3*gap };
-    const sleepUntil=async(ms)=>{ const d=ms-Date.now(); if(d>0) await ns.sleep(d); };
-    await sleepUntil(times.h);  await can('workers/apx-h1.js', hackThreads, t);
-    await sleepUntil(times.w1); await can('workers/apx-w1.js', w1, t);
-    await sleepUntil(times.g);  await can('workers/apx-g1.js', growThreads, t);
-    await sleepUntil(times.w2); await can('workers/apx-w1.js', w2, t);
-  };
-  while(true){ const lanes=Math.max(1,Math.min(3,Number(F.lanes)||1)); const laneGap=Math.max(100,Number(F.gap))*2; for(let i=0;i<lanes;i++){ schedule(i*laneGap); await ns.sleep(50);} if(!F.loop) break; await ns.sleep(Math.max(400,Number(F.gap))); }
+
+/** tools/apx-hgw-batcher.v1.2.js  (v1.2.3 HOTFIX)
+ * Fix: Avoid Netscript concurrency errors ("sleep tried to run: sleep")
+ * - Never call Netscript promise functions concurrently
+ * - Use a single awaited sleep between scheduling steps
+ * - Lightweight 1~3 lanes scheduler for home-only (works with workers/* or direct exec)
+ */
+export async function main(ns){
+  ns.disableLog('sleep'); ns.disableLog('run'); ns.disableLog('exec'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam');
+  const F=ns.flags([
+    ['target',''], ['hackPct',0.03], ['gap',200], ['lanes',1], ['log',true]
+  ]);
+  const print=(...a)=>{ if(F.log) ns.print('[batcher]',...a); };
+  const tgt = await pickTarget(ns, F.target);
+  const lanes = Math.max(1, Math.floor(Number(F.lanes)||1));
+  const gap = Math.max(0, Number(F.gap)||0);
+  const hpct = Math.max(0.001, Math.min(0.99, Number(F.hackPct)||0.03));
+
+  print('start', 'target=',tgt, 'lanes=',lanes, 'hackPct=',hpct, 'gap=',gap);
+
+  while(true){
+    // refresh target in case better one is rooted later
+    const target = await pickTarget(ns, tgt);
+    const wt = ns.getWeakenTime(target), gt = ns.getGrowTime(target), ht = ns.getHackTime(target);
+
+    // compute simple threads based on home RAM
+    const max=ns.getServerMaxRam('home'), used=ns.getServerUsedRam('home'); const free=Math.max(0,max-used);
+    const costH=ns.getScriptRam('workers/apx-h1.js','home')||1.7;
+    const costG=ns.getScriptRam('workers/apx-g1.js','home')||1.75;
+    const costW=ns.getScriptRam('workers/apx-w1.js','home')||1.75;
+    const budget=free*0.9;
+    let thHack=Math.max(1, Math.floor((budget*0.2)/costH));
+    let thGrow=Math.max(1, Math.floor((budget*0.5)/costG));
+    let thWeak=Math.max(1, Math.floor((budget*0.3)/costW));
+
+    // schedule lanes sequentially; ensure each ns.sleep is awaited (no overlap)
+    for(let i=0;i<lanes;i++){
+      // finish times aligned: w2 >= g >= h >= w1
+      const t0 = Date.now();
+      const end = t0 + Math.max(wt, gt, ht) + 20;
+      const dH = Math.max(0, end - ht - t0);
+      const dG = Math.max(0, end - gt - t0);
+      const dW1= Math.max(0, end - wt - t0) + (gap*2);
+      const dW2= Math.max(0, end - wt - t0);
+
+      await ns.sleep(dH);  ns.run('workers/apx-h1.js', thHack, '--target', target, '--pct', hpct);
+      await ns.sleep(Math.max(0,dG - (Date.now()-t0))); ns.run('workers/apx-g1.js', thGrow, '--target', target);
+      await ns.sleep(Math.max(0,dW1 - (Date.now()-t0))); ns.run('workers/apx-w1.js', thWeak, '--target', target);
+      await ns.sleep(Math.max(0,dW2 - (Date.now()-t0))); ns.run('workers/apx-w1.js', thWeak, '--target', target);
+
+      if (gap>0) await ns.sleep(gap);
+    }
+    // outer pacing (single awaited sleep; no nested sleeps outstanding)
+    await ns.sleep(50);
+  }
+}
+
+async function pickTarget(ns, prefer){
+  const me=ns.getPlayer().skills.hacking;
+  const L=['n00dles','foodnstuff','sigma-cosmetics','joesguns','nectar-net','hong-fang-tea','harakiri-sushi'];
+  const can = (h)=>ns.serverExists(h)&&ns.hasRootAccess(h)&&ns.getServerRequiredHackingLevel(h)<=me&&(ns.getServerMaxMoney(h)||0)>0;
+  if (prefer && can(prefer)) return prefer;
+  const roots=L.filter(can); if(roots.length===0) return 'n00dles';
+  roots.sort((a,b)=>(ns.getServerMaxMoney(b)||0)-(ns.getServerMaxMoney(a)||0));
+  return roots[0];
 }

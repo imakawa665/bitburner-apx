@@ -10,7 +10,7 @@ export async function main(ns){
     "tools/apx-pserv.auto.v1.js","tools/apx-pserv.nano.v1.js","tools/apx-share.nano.v1.js","tools/apx-share.manager.v1.js","tools/apx-spread.remote.v1.js",
     "tools/apx-prog.advice.v1.js","tools/apx-hash.spender.v1.js",
     "tools/apx-cmd.pause.js","tools/apx-cmd.resume.js","tools/apx-cmd.status.js","tools/apx-cmd.pinTarget.js","tools/apx-cmd.mode.js",
-    "tools/apx-oneclick.lily.js","tools/apx-healthcheck.v1.js","tools/apx-install.js","tools/apx-startup.lily.js",
+    "tools/apx-oneclick.lily.js","tools/apx-healthcheck.v1.js","tools/apx-install.js","tools/apx-startup.lily.js","tools/apx-reserve.set.v1.js",
     "tools/apx-backdoor.guide.v1.js","tools/apx-casino.runner.v1.js",
     "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js","tools/apx-pserv.scale.v1.js",
     "tools/apx-autopilot.full.v1.js",

@@ -1,0 +1,2 @@
+
+export async function main(ns){ while(true){ try{ await ns.share(); }catch{} } }

@@ -8,7 +8,7 @@ export async function main(ns){
     const a=mk(), b=mk(); rows[id]=a; hook0.appendChild(a[3]); hook1.appendChild(b[3]); rows[id+'-val']=b;
   }
   function show(id,valueStr,tip=""){ const hdr=rows[id], val=rows[id+'-val']; if(!hdr||!val) return; const visible=valueStr!=null; hdr[3].style.display=val[3].style.display=visible?'':'none'; if(visible){ val[1].textContent=' '+String(valueStr).trim(); hdr[2].textContent=tip; val[2].textContent=tip; } }
-  try{ let prior=doc.getElementById("apxHUDCSSv11"); if(prior) prior.remove(); const parent=doc.getElementsByClassName('MuiCollapse-root')[0]?.parentElement; if(parent) parent.style.zIndex=10000; doc.head.insertAdjacentHTML('beforeend', `<style id="apxHUDCSSv11"> .MuiTooltip-popper{z-index:10001}.tooltip{margin:0;position:relative}.tooltip .tooltiptext{visibility:hidden;position:absolute;right:20px;top:19px;padding:2px 10px;white-space:pre;border-radius:6px;background-color:#090a}.tooltip:hover .tooltiptext{visibility:visible;opacity:.9} </style>`);}catch{}
+  try{ let prior=doc.getElementById("apxHUDCSSv11"); if(prior) prior.remove(); const parent=doc.getElementsByClassName('MuiCollapse-root')[0]?.parentElement; if(parent) parent.style.zIndex=10000; doc.head.insertAdjacentHTML('beforeend', `<style id="apxHUDCSSv11"> .MuiTooltip-popper{z-index:10001}.tooltip{margin:0;position:relative}.tooltip .tooltiptext{visibility:hidden;position:absolute;right:20px;top:19px;padding:2px 10px;white-space:pre;border-radius:6px;background-color:#090a}.tooltip:hover .tooltiptext{visibility:visible;opacity:.9}</style>`); }catch{}
   ['Mode','Share','Hashes','HomeRAM','AllRAM','Income','Exp','Reserve'].forEach(h=>addRow(h,h));
   while(true){
     try{

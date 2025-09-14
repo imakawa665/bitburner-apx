@@ -6,7 +6,7 @@ export async function main(ns){
     ['batchEnable',true],['batchMinFreePct',0.25],['batchMinFreeGB',16],['batchHackPct',0.05],['batchGap',200],['batchLanes',2],['batchTarget',''],['batchMinThreads',64],['microReservePct',0.10],
     ['repMode',false],['repFaction','auto'],['repJob','hack'],['shareReserveHomeGB',8],
     ['reserveFile','reserve.txt'],['pservBudget',0.30],['hacknetBudget',0.20],
-    ['stocks',false],['stocksBudget',0.40],['stocksMinCash',1e9]
+    ['stocks',true],['stocksBudget',0.40],['stocksMinCash',1e9]
   ]);
   const exists=(f)=>ns.fileExists(f,'home'); const isAny=(f)=> ns.ps('home').some(p=>p.filename===f);
   const runOnce=(f,th=1,...args)=>{ if(!exists(f)) return 0; if(isAny(f)) return 1; const pid=ns.run(f,th,...args); if(!pid) ns.tprint(`[autopilot] failed to start ${f}`); return pid?1:0; };
@@ -21,12 +21,8 @@ export async function main(ns){
   runOnce('tools/apx-share.nano.v1.js');
   runOnce('tools/apx-healthcheck.v1.js');
 
-  // Stocks integration (BN1-1 OK)
-  if(F.stocks){
-    runOnce('tools/apx-stocks.auto.v1.js',1,'--budget',Number(F.stocksBudget||0.40),'--minCash',Number(F.stocksMinCash||1e9));
-  } else {
-    for(const p of ns.ps('home').filter(p=>p.filename?.startsWith('tools/apx-stocks.'))) ns.kill(p.pid);
-  }
+  if(F.stocks){ runOnce('tools/apx-stocks.auto.v1.js',1,'--budget',Number(F.stocksBudget||0.40),'--minCash',Number(F.stocksMinCash||1e9)); }
+  else { for(const p of ns.ps('home').filter(p=>p.filename?.startsWith('tools/apx-stocks.'))) ns.kill(p.pid); }
 
   function homeFree(){ const max=ns.getServerMaxRam('home'), used=ns.getServerUsedRam('home'); return Math.max(0,max-used); }
   function enoughForBatch(){ const free=homeFree(); const pct=free/Math.max(1,ns.getServerMaxRam('home')); return free>=Math.max(0,Number(F.batchMinFreeGB)||0) && pct>=Math.max(0,Number(F.batchMinFreePct)||0); }
@@ -46,7 +42,7 @@ export async function main(ns){
     const tgt=bestTarget();
     if (F.repMode){
       ns.write('/Temp/apx.mode.rep','1','w');
-      runOnce('tools/apx-share.manager.v1.js',1,'--reserveHomeGB',8);
+      runOnce('tools/apx-share.manager.v1.js',1,'--reserveHomeGB',Number(F.shareReserveHomeGB)||8);
       for(const p of ns.ps('home').filter(p=>p.filename?.startsWith('tools/apx-hgw-batcher'))) ns.kill(p.pid);
     } else {
       if(ns.fileExists('/Temp/apx.mode.rep','home')) ns.rm('/Temp/apx.mode.rep','home');

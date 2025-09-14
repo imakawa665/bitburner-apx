@@ -7,7 +7,7 @@ export async function main(ns){
     "tools/apx-hud.lily.v1.1.js","tools/apx-hgw-batcher.v1.3.js","tools/apx-hacknet.nano.v1.js",
     "tools/apx-pserv.auto.v1.js","tools/apx-pserv.nano.v1.js","tools/apx-share.nano.v1.js","tools/apx-share.manager.v1.js","tools/apx-spread.remote.v1.js",
     "tools/apx-prog.advice.v1.js","tools/apx-hash.spender.v1.js",
-    "tools/apx-oneclick.lily.js","tools/apx-autopilot.full.v1.js","tools/apx-install.js","tools/apx-startup.lily.js",
+    "tools/apx-oneclick.lily.js","tools/apx-autopilot.full.v1.js","tools/apx-install.js","tools/apx-startup.lily.js","tools/apx-reserve.set.v1.js",
     "tools/apx-backdoor.guide.v1.js","tools/apx-casino.runner.v1.js",
     "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js","tools/apx-pserv.scale.v1.js",
     "tools/apx-stocks.auto.v1.js","tools/apx-stocks.momentum.v1.js","tools/apx-stocks.close.v1.js","tools/apx-stocks.status.v1.js"

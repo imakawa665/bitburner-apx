@@ -1,7 +1,6 @@
 
-/** 保有状況の要約を表示 */
 export async function main(ns){
-  if(!ns.stock.hasTIXAPIAccess?.()){ ns.tprint('[stocks.status] TIX APIがありません'); return; }
+  if(!ns.stock?.hasTIXAPIAccess?.()){ ns.tprint('[stocks.status] TIX APIがありません'); return; }
   let total=0, inv=0;
   for(const s of ns.stock.getSymbols()){
     const p=ns.stock.getPrice(s); const [sh,avg]=ns.stock.getPosition(s);

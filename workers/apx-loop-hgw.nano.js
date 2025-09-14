@@ -1,14 +1,1 @@
-
-export async function main(ns){
-  ns.disableLog('sleep');
-  const target=String(ns.args[0]||'n00dles');
-  while(true){
-    try{
-      if(!ns.serverExists(target)||!ns.hasRootAccess(target)){ await ns.sleep(2000); continue; }
-      const s=ns.getServer(target);
-      if(s.hackDifficulty> s.minDifficulty+0.5) await ns.weaken(target);
-      else if(s.moneyAvailable < s.moneyMax*0.95) await ns.grow(target);
-      else await ns.hack(target);
-    }catch{ await ns.sleep(200); }
-  }
-}
+export async function main(ns){ ns.disableLog('sleep'); const target=String(ns.args[0]||'n00dles'); while(true){ try{ if(!ns.serverExists(target)||!ns.hasRootAccess(target)){ await ns.sleep(2000); continue; } const s=ns.getServer(target); if(s.hackDifficulty> s.minDifficulty+0.5) await ns.weaken(target); else if(s.moneyAvailable < s.moneyMax*0.95) await ns.grow(target); else await ns.hack(target);}catch{ await ns.sleep(200);} } }

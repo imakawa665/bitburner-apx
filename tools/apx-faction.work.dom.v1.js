@@ -1,1 +1,0 @@
-export async function main(ns){ ns.print('[faction.work.dom] placeholder (DOM)'); }

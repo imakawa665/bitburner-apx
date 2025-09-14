@@ -1,1 +1,0 @@
-export async function main(ns){ ns.print('[darkweb] DOM buyer placeholder（noDom推奨のため既定停止）'); }

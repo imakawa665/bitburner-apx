@@ -10,11 +10,11 @@ export async function main(ns){
     "tools/apx-pserv.auto.v1.js","tools/apx-pserv.nano.v1.js","tools/apx-share.nano.v1.js","tools/apx-share.manager.v1.js","tools/apx-spread.remote.v1.js",
     "tools/apx-prog.advice.v1.js","tools/apx-hash.spender.v1.js",
     "tools/apx-cmd.pause.js","tools/apx-cmd.resume.js","tools/apx-cmd.status.js","tools/apx-cmd.pinTarget.js","tools/apx-cmd.mode.js",
-    "tools/apx-oneclick.lily.js","tools/apx-daemon.autoadapt.v1.js","tools/apx-healthcheck.v1.js","tools/apx-install.js","tools/apx-startup.lily.js",
+    "tools/apx-oneclick.lily.js","tools/apx-healthcheck.v1.js","tools/apx-install.js","tools/apx-startup.lily.js",
     "tools/apx-backdoor.guide.v1.js","tools/apx-casino.runner.v1.js",
-    "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js",
-    "tools/apx-autopilot.full.v1.js","tools/apx-backdoor.auto.dom.v1.js","tools/apx-study.train.dom.v1.js","tools/apx-faction.work.dom.v1.js",
-    "tools/apx-darkweb.autobuyer.v1.js","tools/apx-pserv.scale.v1.js","tools/apx-reserve.set.v1.js","tools/apx-kill.dom.v1.js"
+    "tools/apx-faction.join.assist.v1.js","tools/apx-stanek.charge.v1.js","tools/apx-pserv.scale.v1.js",
+    "tools/apx-autopilot.full.v1.js",
+    "tools/apx-stocks.auto.v1.js","tools/apx-stocks.momentum.v1.js","tools/apx-stocks.close.v1.js","tools/apx-stocks.status.v1.js"
   ];
   let base=f.raw; if(!base){ if(!f.user || !f.repo) return ns.tprint("usage: run tools/apx-install.js --user <user> --repo <repo> [--branch main] [--start]"); base=`https://raw.githubusercontent.com/${f.user}/${f.repo}/${f.branch}/`; }
   let ok=0,ng=0; for(const rel of FILES){ try{ const url=base+rel; const r=await ns.wget(url, rel, "home"); if(r){ ok++; ns.print("OK  ",rel);} else { ng++; ns.print("NG  ",rel);} await ns.sleep(20);} catch{ ng++; ns.print("ERR ",rel);} }

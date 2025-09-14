@@ -7,7 +7,7 @@ export async function main(ns){
   while(ns.getPurchasedServerCost(gb*2)<=free()*Number(F.budget||0.3) && gb*2<=maxGb) gb*=2;
   if(ns.getPurchasedServerCost(gb)<=free()*Number(F.budget||0.3)){
     const name='px-'+String(Date.now()).slice(-6);
-    const host=ns.purchaseServer(name, gb);
-    if(host) ns.tprint(`[pserv] buy ${host} ${gb}GB`);
+    const h=ns.purchaseServer(name, gb);
+    if(h) ns.tprint(`[pserv.nano] buy ${h} ${gb}GB`);
   }
 }

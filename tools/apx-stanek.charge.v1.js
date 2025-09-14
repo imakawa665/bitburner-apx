@@ -1,1 +1,1 @@
-export async function main(ns){ ns.print('[stanek] placeholder'); }
+export async function main(ns){ /* BN8専用 プレースホルダ */ }

@@ -1,17 +1,19 @@
 
 export async function main(ns){
   ns.disableLog('sleep');
-  const F=ns.flags([['threshold',0.8],['target','']]);
+  const rep='/Temp/apx.mode.rep';
+  const target='n00dles';
+  function isRep(){ return ns.fileExists(rep,'home'); }
   while(true){
     try{
-      if(!ns.hacknet.hashCapacity) return; // Early BN
-      const cap=ns.hacknet.hashCapacity(); if(cap<=0){ await ns.sleep(5000); continue; }
+      if(!ns.hacknet.hashCapacity) return;
+      const cap=ns.hacknet.hashCapacity(); if(cap<=0) return;
       const n=ns.hacknet.numHashes();
-      if(n >= cap*Number(F.threshold||0.8)){
-        // 最も無難：Sell for Money
-        while(ns.hacknet.numHashes() >= 4) ns.hacknet.spendHashes('Sell for Money');
+      if(n/cap>0.8){
+        if(isRep()){ ns.hacknet.spendHashes('Reduce Minimum Security',target); ns.hacknet.spendHashes('Increase Maximum Money',target); }
+        else ns.hacknet.spendHashes('Sell for Money');
       }
     }catch{}
-    await ns.sleep(2000);
+    await ns.sleep(1500);
   }
 }

@@ -8,6 +8,6 @@ export async function main(ns){
   if(ns.getPurchasedServerCost(gb)<=free()*Number(F.budget||0.3)){
     const name='px-'+String(Date.now()).slice(-6);
     const host=ns.purchaseServer(name, gb);
-    if(host) ns.tprint('[pserv.nano] buy '+host+' '+gb+'GB');
+    if(host) ns.tprint(`[pserv] buy ${host} ${gb}GB`);
   }
 }

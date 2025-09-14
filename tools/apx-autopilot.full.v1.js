@@ -1,6 +1,15 @@
 
 export async function main(ns){
   ns.disableLog('sleep'); ns.disableLog('run'); ns.disableLog('getServerMoneyAvailable'); ns.disableLog('getServerMaxRam'); ns.disableLog('getServerUsedRam'); ns.clearLog();
+
+  const $m = (v, dp=2) => {
+    try {
+      if (typeof ns.formatNumber === 'function') return '$' + ns.formatNumber(Number(v)||0, 3, dp);
+    } catch {}
+    try { return '$' + (Number(v)||0).toLocaleString(undefined, {maximumFractionDigits: dp}); } catch {}
+    return '$' + String(v);
+  };
+
   const F=ns.flags([
     ['interval',1000],['goal',1e9],['hud',false],['log',true],['noDom',true],
     ['batchEnable',true],['batchMinFreePct',0.25],['batchMinFreeGB',16],['batchHackPct',0.05],['batchGap',200],['batchLanes',2],['batchTarget',''],['batchMinThreads',64],['microReservePct',0.10],
@@ -12,7 +21,7 @@ export async function main(ns){
   const runOnce=(f,th=1,...args)=>{ if(!exists(f)) return 0; if(isAny(f)) return 1; const pid=ns.run(f,th,...args); if(!pid) ns.tprint(`[autopilot] failed to start ${f}`); return pid?1:0; };
   const restart=async(file,args)=>{ if(!exists(file)) return false; const procs=ns.ps('home').filter(p=>p.filename===file); if(procs.length===0){ runOnce(file,1,...args); return true; } const same=procs.some(p=>JSON.stringify(p.args)===JSON.stringify(args)); if(!same){ for(const p of procs) ns.kill(p.pid); await ns.sleep(10); runOnce(file,1,...args); return true; } return false; };
   const reserve=()=>{ try{ return Math.max(0, Number(ns.read(String(F.reserveFile)||'reserve.txt')||0)); }catch{return 0;} };
-  ns.tprint(`[autopilot] reserve=${ns.formatMoney(reserve())}`);
+  ns.tprint(`[autopilot] reserve=${ $m(reserve()) }`);
 
   runOnce('tools/apx-hacknet.nano.v1.js',1,'--budget',Number(F.hacknetBudget||0.20),'--maxROI',3600,'--log','true');
   runOnce('rooter/apx-rooter.auto.v1.js',1,'--interval',10000,'--log');

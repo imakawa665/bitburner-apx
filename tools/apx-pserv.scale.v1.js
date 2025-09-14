@@ -15,14 +15,21 @@ export async function main(ns){
       if (hosts.length<maxServers){
         let gb=Math.max(Number(F.minRam)||8, 2);
         while(price(gb*2)<=budget && gb*2<=Number(F.maxRam||16384)) gb*=2;
-        if (price(gb)<=budget){ const name=prefix+String(Date.now()).slice(-6); const host=ns.purchaseServer(name, gb); if(host) log('buy',host,gb+'GB'); }
+        if (price(gb)<=budget){
+          const name=prefix+String(Date.now()).slice(-6);
+          const host=ns.purchaseServer(name, gb);
+          if(host){ log('buy',host,gb+'GB'); }
+        }
       } else {
         const smallest=hosts[0];
         let targetRam=Math.max(smallest.ram*2, Number(F.minRam)||8);
         while(price(targetRam*2)<=budget && targetRam*2<=Number(F.maxRam||16384)) targetRam*=2;
         if (targetRam>smallest.ram && price(targetRam)<=budget){
           ns.killall(smallest.h); await ns.sleep(50);
-          if(ns.deleteServer(smallest.h)){ const newHost=ns.purchaseServer(prefix+String(Date.now()).slice(-6), targetRam); if(newHost) log('replace',smallest.h,'->',newHost, targetRam+'GB'); }
+          if(ns.deleteServer(smallest.h)){
+            const newHost=ns.purchaseServer(prefix+String(Date.now()).slice(-6), targetRam);
+            if(newHost){ log('replace',smallest.h,'->',newHost, targetRam+'GB'); }
+          }
         }
       }
     }catch{}

@@ -1,8 +1,17 @@
 
 export async function main(ns){
   ns.disableLog('sleep'); ns.disableLog('run'); ns.clearLog();
+
+  const $m = (v, dp=2) => {
+    try {
+      if (typeof ns.formatNumber === 'function') return '$' + ns.formatNumber(Number(v)||0, 3, dp);
+    } catch {}
+    try { return '$' + (Number(v)||0).toLocaleString(undefined, {maximumFractionDigits: dp}); } catch {}
+    return '$' + String(v);
+  };
+
   const F = ns.flags([['profile',''], ['reserve', null], ['allowDom', false], ['stocks', true]]);
-  if (F.reserve!=null){ ns.write('reserve.txt', String(Math.max(0,Number(F.reserve)||0)), 'w'); ns.tprint(`[oneclick] reserve=${ns.formatMoney(Math.max(0,Number(F.reserve)||0))}`); }
+  if (F.reserve!=null){ ns.write('reserve.txt', String(Math.max(0,Number(F.reserve)||0)), 'w'); ns.tprint(`[oneclick] reserve=${ $m(Math.max(0,Number(F.reserve)||0)) }`); }
   const pf=String(F.profile||'').toLowerCase(); const domFlag = F.allowDom ? ['--noDom','false'] : ['--noDom','true'];
   if (pf==='rep'){ ns.run('tools/apx-autopilot.full.v1.js',1,'--interval',900,'--repMode','true','--stocks',String(Boolean(F.stocks)),...domFlag); ns.tprint(`[oneclick] REPモード (stocks=${F.stocks})`); return; }
   if (pf==='autofull'){ ns.run('tools/apx-autopilot.full.v1.js',1,'--interval',1000,'--stocks',String(Boolean(F.stocks)), ...domFlag); ns.tprint(`[oneclick] AUTOFULL (stocks=${F.stocks})`); return; }

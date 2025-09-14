@@ -1,7 +1,6 @@
 
 export async function main(ns){
-  const F=ns.flags([['interval',10000],['log',false]]);
-  const log=(...a)=>{ if(F.log) ns.print('[rooter]',...a); };
+  const F=ns.flags([['interval',10000],['log',false]]); const log=(...a)=>{ if(F.log) ns.print('[rooter]',...a); };
   function tryRoot(h){
     const sv=ns.getServer(h); if(sv.hasAdminRights) return;
     let opened=0;
@@ -10,9 +9,7 @@ export async function main(ns){
     try{ if(ns.fileExists('relaySMTP.exe','home')){ ns.relaysmtp(h); opened++; } }catch{}
     try{ if(ns.fileExists('HTTPWorm.exe','home')){ ns.httpworm(h); opened++; } }catch{}
     try{ if(ns.fileExists('SQLInject.exe','home')){ ns.sqlinject(h); opened++; } }catch{}
-    if((sv.numOpenPortsRequired||0) <= opened && (sv.requiredHackingSkill||0)<=ns.getPlayer().skills.hacking){
-      try{ ns.nuke(h); log('rooted',h); }catch{}
-    }
+    if((sv.numOpenPortsRequired||0) <= opened && (sv.requiredHackingSkill||0)<=ns.getPlayer().skills.hacking){ try{ ns.nuke(h); log('rooted',h); }catch{} }
   }
   while(true){
     const seen=new Set(); const q=['home'];

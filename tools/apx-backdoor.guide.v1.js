@@ -1,9 +1,1 @@
-
-/** tools/apx-backdoor.guide.v1.js - print guide for next backdoorable servers */
-export async function main(ns){
-  ns.disableLog('sleep'); ns.clearLog();
-  function rooted(){ const seen=new Set(); const q=['home']; const out=[]; while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); } for(const h of seen){ try{ const sv=ns.getServer(h); if(!sv.hasAdminRights) continue; out.push(h);}catch{} } return out; }
-  const me=ns.getPlayer().skills.hacking;
-  const cand=rooted().map(h=>({h,req:ns.getServer(h).requiredHackingSkill||0,back:ns.getServer(h).backdoorInstalled})).filter(x=>!x.back).sort((a,b)=>a.req-b.req);
-  ns.tprint('=== Backdoor Guide ==='); for(const c of cand.slice(0,10)){ ns.tprint(`${c.h.padEnd(20)} | req:${c.req} | backdoor:${c.back?'Y':'-'}`); }
-}
+export async function main(ns){ ns.disableLog('sleep'); const me=ns.getPlayer().skills.hacking; function rooted(){ const seen=new Set(); const q=['home']; const out=[]; while(q.length){ const s=q.pop(); if(seen.has(s)) continue; seen.add(s); for(const n of ns.scan(s)) q.push(n); } for(const h of seen){ try{ const sv=ns.getServer(h); if(!sv.hasAdminRights) continue; out.push(h);}catch{} } return out; } const cand=rooted().map(h=>({h,req:ns.getServer(h).requiredHackingSkill||0,back:ns.getServer(h).backdoorInstalled})).filter(x=>!x.back).sort((a,b)=>a.req-b.req); ns.tprint('=== Backdoor Guide ==='); for(const c of cand.slice(0,10)){ ns.tprint(`${c.h.padEnd(20)} | req:${c.req} | backdoor:${c.back?'Y':'-'}`); } }

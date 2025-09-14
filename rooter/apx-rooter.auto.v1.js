@@ -1,12 +1,7 @@
 
-/** rooter/apx-rooter.auto.v1.js
- * Scan and root all reachable servers using available port programs.
- * Args: --interval ms (default 10000) --log
- */
 export async function main(ns){
   const F=ns.flags([['interval',10000],['log',false]]);
   const log=(...a)=>{ if(F.log) ns.print('[rooter]',...a); };
-  function progs(){ return ['BruteSSH.exe','FTPCrack.exe','relaySMTP.exe','HTTPWorm.exe','SQLInject.exe'].filter(p=>ns.fileExists(p,'home')); }
   function tryRoot(h){
     const sv=ns.getServer(h); if(sv.hasAdminRights) return;
     let opened=0;

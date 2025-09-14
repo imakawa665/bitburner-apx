@@ -1,0 +1,1 @@
+export async function main(ns){const t=String(ns.args[0]||'n00dles'); while(true){try{await ns.grow(t);}catch{} }}

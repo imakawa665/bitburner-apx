@@ -1,1 +1,0 @@
-export async function main(ns){ /* BN8専用 プレースホルダ */ }

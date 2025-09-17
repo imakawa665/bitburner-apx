@@ -1,1 +1,0 @@
-export async function main(ns){ /* join assist placeholder (BN1でも安全) */ }
